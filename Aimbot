@@ -3,7 +3,10 @@ if not FH or FH.aimLoaded then return end
 FH.aimLoaded = true
 
 local C = FH.C
-local cfg = { on = false, team = false, wall = false, showFov = false, fov = 150, smooth = 40 }
+local cfg = {
+    on = false, team = false, wall = false, friends = false, showFov = false,
+    fov = 150, smooth = 40, part = "Head", mode = "Hold RMB"
+}
 
 local circle = Instance.new("Frame")
 circle.Name = "FH_FOV"
@@ -12,11 +15,12 @@ circle.Position = UDim2.new(.5, 0, .5, 0)
 circle.BackgroundTransparency = 1
 circle.BorderSizePixel = 0
 circle.Visible = false
+circle.ZIndex = 0
 circle.Parent = FH.sg
 Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
 local cs = Instance.new("UIStroke", circle)
-cs.Color = C.accent
 cs.Thickness = 1.5
+FH.theme(cs, "Color", "accent")
 
 local function updCircle()
     local s = FH.us.Scale
@@ -26,8 +30,23 @@ local function updCircle()
     circle.Visible = cfg.on and cfg.showFov
 end
 
-local function isTeammate(p)
-    return FH.LP.Team ~= nil and p.Team == FH.LP.Team
+local fc = {}
+local function isFriend(p)
+    local v = fc[p.UserId]
+    if v == nil then
+        fc[p.UserId] = false
+        task.spawn(function()
+            local ok, r = pcall(function() return FH.LP:IsFriendsWith(p.UserId) end)
+            fc[p.UserId] = ok and r or false
+        end)
+        return false
+    end
+    return v
+end
+
+local function aimPart(char)
+    if cfg.part == "Torso" then return char:FindFirstChild("HumanoidRootPart") end
+    return char:FindFirstChild("Head")
 end
 
 local function getTarget(cam)
@@ -36,11 +55,14 @@ local function getTarget(cam)
     local best, bestD = nil, cfg.fov
 
     for _, p in ipairs(FH.PL:GetPlayers()) do
-        if p ~= FH.LP and p.Character and not (cfg.team and isTeammate(p)) then
+        local skip = p == FH.LP or not p.Character
+        if not skip and cfg.team and FH.LP.Team ~= nil and p.Team == FH.LP.Team then skip = true end
+        if not skip and cfg.friends and isFriend(p) then skip = true end
+        if not skip then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
-            local head = p.Character:FindFirstChild("Head")
-            if hum and head and hum.Health > 0 then
-                local pos, onScreen = cam:WorldToViewportPoint(head.Position)
+            local part = aimPart(p.Character)
+            if hum and part and hum.Health > 0 then
+                local pos, onScreen = cam:WorldToViewportPoint(part.Position)
                 if onScreen then
                     local d = (Vector2.new(pos.X, pos.Y) - center).Magnitude
                     if d < bestD then
@@ -49,10 +71,10 @@ local function getTarget(cam)
                             local rp = RaycastParams.new()
                             rp.FilterType = Enum.RaycastFilterType.Exclude
                             rp.FilterDescendantsInstances = { FH.LP.Character, p.Character }
-                            visible = FH.WS:Raycast(cam.CFrame.Position, head.Position - cam.CFrame.Position, rp) == nil
+                            visible = FH.WS:Raycast(cam.CFrame.Position, part.Position - cam.CFrame.Position, rp) == nil
                         end
                         if visible then
-                            best, bestD = head, d
+                            best, bestD = part, d
                         end
                     end
                 end
@@ -62,12 +84,12 @@ local function getTarget(cam)
     return best
 end
 
-FH.RS.RenderStepped:Connect(function()
+FH.bind(FH.RS.RenderStepped, function()
     updCircle()
     if not cfg.on then return end
 
     local touchOnly = FH.UI.TouchEnabled and not FH.UI.MouseEnabled
-    if not touchOnly and not FH.UI:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
+    if not touchOnly and cfg.mode == "Hold RMB" and not FH.UI:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
 
     local cam = FH.WS.CurrentCamera
     if not cam then return end
@@ -79,10 +101,16 @@ FH.RS.RenderStepped:Connect(function()
 end)
 
 FH.modules["Aimbot"] = function()
-    FH.crearOpcion("Aimbot", function(s) cfg.on = s end)
-    FH.crearOpcion("Aimbot Team Check", function(s) cfg.team = s end)
-    FH.crearOpcion("Wall Check", function(s) cfg.wall = s end)
-    FH.crearOpcion("Mostrar FOV", function(s) cfg.showFov = s end)
+    FH.crearSeccion("Aimbot")
+    FH.crearOpcion("Aimbot", function(s) cfg.on = s end, "Mobile: always on | PC: see Activation")
+    FH.crearSelector("Activation", { "Hold RMB", "Always" }, "Hold RMB", function(v) cfg.mode = v end)
+    FH.crearSelector("Aim Part", { "Head", "Torso" }, "Head", function(v) cfg.part = v end)
+    FH.crearSeccion("Filters")
+    FH.crearOpcion("Aimbot Team Check", function(s) cfg.team = s end, "Ignore your teammates")
+    FH.crearOpcion("Wall Check", function(s) cfg.wall = s end, "Ignore targets behind walls")
+    FH.crearOpcion("Ignore Friends", function(s) cfg.friends = s end, "Ignore your Roblox friends")
+    FH.crearSeccion("Settings")
+    FH.crearOpcion("Show FOV", function(s) cfg.showFov = s end)
     FH.crearSlider("FOV", 30, 500, 150, function(v) cfg.fov = v end)
-    FH.crearSlider("Suavidad", 0, 95, 40, function(v) cfg.smooth = v end)
+    FH.crearSlider("Smoothness", 0, 95, 40, function(v) cfg.smooth = v end)
 end
