@@ -4,40 +4,37 @@ getgenv().FH = FH
 FH.RS = game:GetService("RunService")
 FH.PL = game:GetService("Players")
 FH.WS = game:GetService("Workspace")
-FH.RST = game:GetService("ReplicatedStorage")
 FH.TW = game:GetService("TweenService")
 FH.UI = game:GetService("UserInputService")
 FH.SS = game:GetService("SoundService")
 FH.CG = game:GetService("CoreGui")
 FH.LP = FH.PL.LocalPlayer
 FH.BW, FH.BH = 420, 340
-FH.musicVolume = 0.15
 
 FH.C = {
-    bg_dark=Color3.fromRGB(15, 10, 20),
-    bg_panel=Color3.fromRGB(25, 15, 35),
-    bg_card=Color3.fromRGB(40, 20, 55),
-    bg_card_hl=Color3.fromRGB(255, 105, 180),
-    accent=Color3.fromRGB(255, 105, 180),
-    accent2=Color3.fromRGB(219, 112, 147),
-    accent4=Color3.fromRGB(255, 160, 180),
-    text=Color3.fromRGB(255, 240, 245),
-    text_sub=Color3.fromRGB(180, 150, 180),
-    border=Color3.fromRGB(255, 140, 180),
-    success=Color3.fromRGB(120,255,120),
-    danger=Color3.fromRGB(255,50,50)
+    bg_dark = Color3.fromRGB(15, 10, 20),
+    bg_panel = Color3.fromRGB(25, 15, 35),
+    bg_card = Color3.fromRGB(40, 20, 55),
+    accent = Color3.fromRGB(255, 105, 180),
+    accent2 = Color3.fromRGB(219, 112, 147),
+    text = Color3.fromRGB(255, 240, 245),
+    text_sub = Color3.fromRGB(180, 150, 180),
+    border = Color3.fromRGB(255, 140, 180),
+    success = Color3.fromRGB(120, 255, 120),
+    danger = Color3.fromRGB(255, 50, 50)
 }
 FH.est = {}
-FH.on = {}
+FH.val = {}
 FH.modules = {}
+FH.panelConns = {}
 
-pcall(function() 
-    for _,n in ipairs({"FH_Loading","FatassesHub", "RobloxGui"}) do
+pcall(function()
+    for _, n in ipairs({ "FH_Loading", "FatassesHub" }) do
         local v = FH.CG:FindFirstChild(n)
         if v then v:Destroy() end
         local v2 = FH.LP.PlayerGui:FindFirstChild(n)
         if v2 then v2:Destroy() end
-    end 
+    end
 end)
 
 local parent = FH.LP:WaitForChild("PlayerGui", 10)
@@ -57,10 +54,8 @@ lsFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 lsFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 lsFrame.BackgroundColor3 = C.bg_panel
 lsFrame.BorderSizePixel = 0
-lsFrame.Active = false
 lsFrame.Parent = ls
 Instance.new("UICorner", lsFrame).CornerRadius = UDim.new(0, 16)
-FH.lsFrame = lsFrame
 
 local lsStroke = Instance.new("UIStroke", lsFrame)
 lsStroke.Color = C.accent
@@ -102,21 +97,27 @@ FH.lsFill = barFill
 
 local barGradient = Instance.new("UIGradient", barFill)
 barGradient.Color = ColorSequence.new(Color3.fromRGB(255, 105, 180), Color3.fromRGB(147, 112, 219))
-barGradient.Rotation = 0
 
 task.spawn(function()
+    local info = TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
     while lsFrame.Parent do
-        FH.TW:Create(lsTitle, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextTransparency = 0.5}):Play()
-        FH.TW:Create(lsFrame, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position = UDim2.new(0.5, 0, 0.5, -5)}):Play()
+        FH.TW:Create(lsTitle, info, { TextTransparency = 0.5 }):Play()
+        FH.TW:Create(lsFrame, info, { Position = UDim2.new(0.5, 0, 0.5, -5) }):Play()
         task.wait(1.5)
-        FH.TW:Create(lsTitle, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextTransparency = 0}):Play()
-        FH.TW:Create(lsFrame, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
+        FH.TW:Create(lsTitle, info, { TextTransparency = 0 }):Play()
+        FH.TW:Create(lsFrame, info, { Position = UDim2.new(0.5, 0, 0.5, 0) }):Play()
         task.wait(1.5)
     end
 end)
 
-FH.SND = {button="rbxassetid://9119717523",tab_switch="rbxassetid://14133663945",toggle_on="rbxassetid://9119717523",toggle_off="rbxassetid://103866342467024",hover="rbxassetid://14133663945"}
-FH.sfx = function(n, v, p) 
+FH.SND = {
+    button = "rbxassetid://9119717523",
+    tab_switch = "rbxassetid://14133663945",
+    toggle_on = "rbxassetid://9119717523",
+    toggle_off = "rbxassetid://103866342467024",
+    hover = "rbxassetid://14133663945"
+}
+FH.sfx = function(n, v, p)
     local id = FH.SND[n]
     if not id then return end
     local s = Instance.new("Sound")
@@ -144,9 +145,9 @@ us.Parent = sg
 FH.us = us
 
 local cam = workspace.CurrentCamera
-if cam then 
+if cam then
     local vp = cam.ViewportSize
-    us.Scale = math.clamp(math.min(vp.X/(FH.BW+40), vp.Y/(FH.BH+40)), 0.5, 1.3)
+    us.Scale = math.clamp(math.min(vp.X / (FH.BW + 40), vp.Y / (FH.BH + 40)), 0.5, 1.3)
 end
 
 local fr = Instance.new("Frame")
@@ -204,6 +205,8 @@ beta.TextScaled = true
 beta.Font = Enum.Font.GothamBold
 beta.TextXAlignment = Enum.TextXAlignment.Left
 
+local isOpen = false
+
 local cb = Instance.new("TextButton", tb)
 cb.Size = UDim2.new(0, 30, 0, 30)
 cb.Position = UDim2.new(1, -45, .5, -15)
@@ -217,23 +220,24 @@ cb.AutoButtonColor = false
 Instance.new("UICorner", cb).CornerRadius = UDim.new(1, 0)
 cb.MouseButton1Click:Connect(function()
     FH.sfx("button", 1, 1.2)
-    FH.TW:Create(fr, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0,0,0,0)}):Play()
+    FH.TW:Create(fr, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Size = UDim2.new(0, 0, 0, 0) }):Play()
     task.wait(0.3)
-    fr.Visible = false 
+    fr.Visible = false
+    isOpen = false
 end)
 
 local drag, ds, sp = false, nil, nil
 tb.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then 
+    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
         drag = true
         ds = i.Position
-        sp = fr.Position 
-    end 
+        sp = fr.Position
+    end
 end)
 tb.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then 
-        drag = false 
-    end 
+    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+        drag = false
+    end
 end)
 FH.UI.InputChanged:Connect(function(i)
     if drag and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseMovement) then
@@ -242,13 +246,11 @@ FH.UI.InputChanged:Connect(function(i)
         local d = (i.Position - ds) / s
         local newX = sp.X.Offset + d.X
         local newY = sp.Y.Offset + d.Y
-        
         local vp = workspace.CurrentCamera.ViewportSize
-        newX = math.clamp(newX, -FH.BW/2, vp.X - FH.BW/2)
-        newY = math.clamp(newY, -FH.BH/2, vp.Y - FH.BH/2)
-        
+        newX = math.clamp(newX, -FH.BW / 2, vp.X - FH.BW / 2)
+        newY = math.clamp(newY, -FH.BH / 2, vp.Y - FH.BH / 2)
         fr.Position = UDim2.new(sp.X.Scale, newX, sp.Y.Scale, newY)
-    end 
+    end
 end)
 
 local sb = Instance.new("ScrollingFrame", fr)
@@ -291,17 +293,17 @@ ol.Padding = UDim.new(0, 8)
 FH.animar = function(obj)
     local base = obj.Size
     obj.MouseEnter:Connect(function()
-        FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = base + UDim2.new(0, 6, 0, 6)}):Play()
+        FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), { Size = base + UDim2.new(0, 6, 0, 6) }):Play()
         pcall(function() FH.sfx("hover", 0.35, 1) end)
     end)
     obj.MouseLeave:Connect(function()
-        FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = base}):Play()
+        FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), { Size = base }):Play()
     end)
 end
 
-FH.crearOpcion = function(nombre, cb)
+local function card(h)
     local o = Instance.new("Frame", oc)
-    o.Size = UDim2.new(1, 0, 0, 44)
+    o.Size = UDim2.new(1, 0, 0, h)
     o.BackgroundColor3 = C.bg_card
     o.BackgroundTransparency = .2
     o.BorderSizePixel = 0
@@ -311,7 +313,12 @@ FH.crearOpcion = function(nombre, cb)
     s.Color = C.border
     s.Thickness = 1
     s.Transparency = .4
-    
+    return o
+end
+
+FH.crearOpcion = function(nombre, callback)
+    local o = card(44)
+
     local l = Instance.new("TextLabel", o)
     l.Size = UDim2.new(1, -70, 1, 0)
     l.Position = UDim2.new(0, 15, 0, 0)
@@ -322,7 +329,7 @@ FH.crearOpcion = function(nombre, cb)
     l.Font = Enum.Font.GothamBold
     l.TextXAlignment = Enum.TextXAlignment.Left
     l.TextWrapped = true
-    
+
     local tb2 = Instance.new("TextButton", o)
     tb2.Size = UDim2.new(0, 48, 0, 26)
     tb2.Position = UDim2.new(1, -60, .5, -13)
@@ -331,55 +338,119 @@ FH.crearOpcion = function(nombre, cb)
     tb2.BorderSizePixel = 0
     tb2.AutoButtonColor = false
     Instance.new("UICorner", tb2).CornerRadius = UDim.new(1, 0)
-    
+
     local ts = Instance.new("UIStroke", tb2)
     ts.Color = C.border
     ts.Thickness = 1.5
     ts.Transparency = .2
-    
+
     local grad = Instance.new("UIGradient", tb2)
     grad.Color = ColorSequence.new(Color3.fromRGB(60, 30, 70), Color3.fromRGB(40, 20, 50))
-    
+
     local b = Instance.new("Frame", tb2)
     b.Size = UDim2.new(0, 20, 0, 20)
     b.Position = UDim2.new(0, 3, .5, -10)
     b.BackgroundColor3 = C.text_sub
     b.BorderSizePixel = 0
     Instance.new("UICorner", b).CornerRadius = UDim.new(1, 0)
-    
+
     local es = FH.est[nombre] or false
-    
+
     local function setV(a, an)
         local t = an and .3 or 0
         local i = TweenInfo.new(t, an and Enum.EasingStyle.Back or Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
         if a then
-            FH.TW:Create(b, i, {Position = UDim2.new(0, 25, .5, -10), BackgroundColor3 = C.accent, Size = UDim2.new(0, 22, 0, 22)}):Play()
-            FH.TW:Create(tb2, i, {BackgroundColor3 = C.accent2}):Play()
-            FH.TW:Create(ts, i, {Color = C.accent, Transparency = 0}):Play()
+            FH.TW:Create(b, i, { Position = UDim2.new(0, 25, .5, -10), BackgroundColor3 = C.accent, Size = UDim2.new(0, 22, 0, 22) }):Play()
+            FH.TW:Create(tb2, i, { BackgroundColor3 = C.accent2 }):Play()
+            FH.TW:Create(ts, i, { Color = C.accent, Transparency = 0 }):Play()
             grad.Color = ColorSequence.new(C.accent2, C.accent)
         else
-            FH.TW:Create(b, i, {Position = UDim2.new(0, 3, .5, -10), BackgroundColor3 = C.text_sub, Size = UDim2.new(0, 20, 0, 20)}):Play()
-            FH.TW:Create(tb2, i, {BackgroundColor3 = C.bg_dark}):Play()
-            FH.TW:Create(ts, i, {Color = C.border, Transparency = .2}):Play()
+            FH.TW:Create(b, i, { Position = UDim2.new(0, 3, .5, -10), BackgroundColor3 = C.text_sub, Size = UDim2.new(0, 20, 0, 20) }):Play()
+            FH.TW:Create(tb2, i, { BackgroundColor3 = C.bg_dark }):Play()
+            FH.TW:Create(ts, i, { Color = C.border, Transparency = .2 }):Play()
             grad.Color = ColorSequence.new(Color3.fromRGB(60, 30, 70), Color3.fromRGB(40, 20, 50))
         end
     end
     setV(es, false)
-    
+
     local function tg()
         es = not es
         FH.est[nombre] = es
         setV(es, true)
         FH.sfx(es and "toggle_on" or "toggle_off")
-        if cb then pcall(cb, es) end
+        if callback then pcall(callback, es) end
     end
     tb2.MouseButton1Click:Connect(tg)
     l.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then 
-            tg() 
-        end 
+        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+            tg()
+        end
     end)
     FH.animar(tb2)
+end
+
+FH.crearSlider = function(nombre, mn, mx, def, callback)
+    local v = FH.val[nombre] or def
+    local o = card(52)
+
+    local l = Instance.new("TextLabel", o)
+    l.Size = UDim2.new(1, -30, 0, 22)
+    l.Position = UDim2.new(0, 15, 0, 4)
+    l.BackgroundTransparency = 1
+    l.Text = nombre .. ": " .. v
+    l.TextColor3 = C.text
+    l.TextSize = 14
+    l.Font = Enum.Font.GothamBold
+    l.TextXAlignment = Enum.TextXAlignment.Left
+
+    local bar = Instance.new("Frame", o)
+    bar.Size = UDim2.new(1, -30, 0, 8)
+    bar.Position = UDim2.new(0, 15, 0, 36)
+    bar.BackgroundColor3 = C.bg_dark
+    bar.BorderSizePixel = 0
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+
+    local fill = Instance.new("Frame", bar)
+    fill.Size = UDim2.new((v - mn) / (mx - mn), 0, 1, 0)
+    fill.BackgroundColor3 = C.accent
+    fill.BorderSizePixel = 0
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
+    local hit = Instance.new("TextButton", o)
+    hit.Size = UDim2.new(1, -30, 0, 26)
+    hit.Position = UDim2.new(0, 15, 0, 27)
+    hit.BackgroundTransparency = 1
+    hit.Text = ""
+
+    local dragging = false
+    local function upd(x)
+        local r = math.clamp((x - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
+        v = math.floor(mn + (mx - mn) * r + 0.5)
+        FH.val[nombre] = v
+        fill.Size = UDim2.new(r, 0, 1, 0)
+        l.Text = nombre .. ": " .. v
+        if callback then pcall(callback, v) end
+    end
+
+    hit.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            upd(i.Position.X)
+        end
+    end)
+    table.insert(FH.panelConns, FH.UI.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseMovement) then
+            upd(i.Position.X)
+        end
+    end))
+    table.insert(FH.panelConns, FH.UI.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end))
+
+    FH.val[nombre] = v
+    if callback then pcall(callback, v) end
 end
 
 FH.crearBotonAccion = function(nombre, onFire)
@@ -407,10 +478,20 @@ FH.crearBotonAccion = function(nombre, onFire)
     FH.animar(b)
 end
 
-local TABS = {"ESP", "Aimbot", "Player", "Extra"}
+local TABS = { "ESP", "Aimbot", "Player", "Extra" }
 local tabs = {}
 FH.tabs = tabs
 FH.pestana = "ESP"
+
+FH.panel = function()
+    for _, c in ipairs(FH.panelConns) do pcall(function() c:Disconnect() end) end
+    table.clear(FH.panelConns)
+    for _, h in ipairs(FH.oc:GetChildren()) do
+        if not h:IsA("UIListLayout") then h:Destroy() end
+    end
+    local m = FH.modules[FH.pestana]
+    if m then pcall(m) end
+end
 
 local function mkTab(n)
     local t = Instance.new("TextButton", FH.sb)
@@ -421,7 +502,7 @@ local function mkTab(n)
     t.BorderSizePixel = 0
     t.AutoButtonColor = false
     Instance.new("UICorner", t).CornerRadius = UDim.new(0, 10)
-    
+
     local l = Instance.new("TextLabel", t)
     l.Size = UDim2.new(1, 0, 1, 0)
     l.BackgroundTransparency = 1
@@ -429,23 +510,21 @@ local function mkTab(n)
     l.TextColor3 = C.text
     l.TextScaled = true
     l.Font = Enum.Font.GothamBold
-    l.TextXAlignment = Enum.TextXAlignment.Center
-    l.TextYAlignment = Enum.TextYAlignment.Center
-    
+
     local ck = false
-    local function setSt(s) 
-        if s == "sel" then 
+    local function setSt(s)
+        if s == "sel" then
             t.BackgroundColor3 = C.accent
-            t.BackgroundTransparency = 0 
+            t.BackgroundTransparency = 0
             l.TextColor3 = Color3.fromRGB(255, 255, 255)
-        else 
+        else
             t.BackgroundColor3 = C.bg_card
-            t.BackgroundTransparency = .2 
+            t.BackgroundTransparency = .2
             l.TextColor3 = C.text
-        end 
+        end
     end
-    
-    t.MouseButton1Click:Connect(function() 
+
+    t.MouseButton1Click:Connect(function()
         if ck or FH.pestana == n then return end
         ck = true
         FH.sfx("tab_switch", 2, 1)
@@ -455,47 +534,13 @@ local function mkTab(n)
         task.spawn(function() pcall(FH.panel) end)
         task.delay(.3, function() ck = false end)
     end)
-    
+
     FH.animar(t)
-    tabs[n] = {S = setSt}
+    tabs[n] = { S = setSt }
 end
 
 for _, n in ipairs(TABS) do mkTab(n) end
-if tabs["ESP"] then tabs["ESP"].S("sel") end
-
-FH.nearest = function(maxD) 
-    maxD = maxD or math.huge
-    local mc = FH.LP.Character
-    if not mc then return nil end
-    local mh = mc:FindFirstChild("HumanoidRootPart")
-    if not mh then return nil end
-    local b, bd = nil, maxD
-    for _, p in ipairs(FH.PL:GetPlayers()) do 
-        if p ~= FH.LP and p.Character then
-            local ch = p.Character
-            local h = ch:FindFirstChildOfClass("Humanoid")
-            local hr = ch:FindFirstChild("HumanoidRootPart")
-            if h and h.Health > 0 and hr then 
-                local d = (mh.Position - hr.Position).Magnitude
-                if d < bd then 
-                    bd = d
-                    b = {Player=p, Char=ch, HRP=hr} 
-                end 
-            end 
-        end 
-    end 
-    return b 
-end
-
-FH.panel = function()
-    for _, h in ipairs(FH.oc:GetChildren()) do 
-        if not h:IsA("UIListLayout") then h:Destroy() end 
-    end
-    local mod = FH.modules[FH.pestana]
-    if mod and mod.panel then
-        pcall(mod.panel)
-    end
-end
+tabs["ESP"].S("sel")
 
 local th = Instance.new("Frame")
 th.Size = UDim2.new(0, 60, 0, 60)
@@ -506,8 +551,7 @@ th.Parent = sg
 local tbtn = Instance.new("ImageButton", th)
 tbtn.Size = UDim2.new(1, 0, 1, 0)
 tbtn.BackgroundColor3 = C.accent
-tbtn.Image = "rbxassetid://13448937025" 
-tbtn.ImageTransparency = 0
+tbtn.Image = "rbxassetid://13448937025"
 tbtn.ScaleType = Enum.ScaleType.Crop
 tbtn.BorderSizePixel = 0
 tbtn.AutoButtonColor = false
@@ -517,38 +561,35 @@ local stBtn = Instance.new("UIStroke", tbtn)
 stBtn.Color = C.accent2
 stBtn.Thickness = 2
 
-task.spawn(function() 
-    while th.Parent do 
-        FH.TW:Create(tbtn, TweenInfo.new(0.8, Enum.EasingStyle.Sine), {Size = UDim2.new(1.1, 0, 1.1, 0)}):Play()
+task.spawn(function()
+    while th.Parent do
+        FH.TW:Create(tbtn, TweenInfo.new(0.8, Enum.EasingStyle.Sine), { Size = UDim2.new(1.1, 0, 1.1, 0) }):Play()
         task.wait(0.8)
-        FH.TW:Create(tbtn, TweenInfo.new(0.8, Enum.EasingStyle.Sine), {Size = UDim2.new(1, 0, 1, 0)}):Play()
-        task.wait(0.8) 
-    end 
+        FH.TW:Create(tbtn, TweenInfo.new(0.8, Enum.EasingStyle.Sine), { Size = UDim2.new(1, 0, 1, 0) }):Play()
+        task.wait(0.8)
+    end
 end)
 
-local isOpen = false
 local isAnimating = false
-
-tbtn.MouseButton1Click:Connect(function() 
+tbtn.MouseButton1Click:Connect(function()
     if isAnimating then return end
     isAnimating = true
-    FH.sfx("button", 1, 1.2) 
-    
+    FH.sfx("button", 1, 1.2)
+
     if isOpen then
-        FH.TW:Create(fr, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)}):Play()
+        FH.TW:Create(fr, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Size = UDim2.new(0, 0, 0, 0) }):Play()
         task.wait(0.3)
         fr.Visible = false
         isOpen = false
     else
         fr.Position = UDim2.new(0.5, 0, 0.5, 0)
         fr.Visible = true
-        fr.Size = UDim2.new(0,0,0,0)
-        FH.TW:Create(fr, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, FH.BW, 0, FH.BH)}):Play()
+        fr.Size = UDim2.new(0, 0, 0, 0)
+        FH.TW:Create(fr, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, FH.BW, 0, FH.BH) }):Play()
         isOpen = true
     end
     task.wait(0.4)
     isAnimating = false
 end)
 
-FH.panel()
 FH.p1 = true
