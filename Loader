@@ -1,7 +1,7 @@
 if getgenv().FH and getgenv().FH.p1 then return end
 
 local TweenService = game:GetService("TweenService")
-local base = "https://raw.githubusercontent.com/TU_USUARIO/TU_REPO/main/"
+local base = "https://raw.githubusercontent.com/SashaLesebaneseScript/Universal/refs/heads/main/"
 local files = { "MainGUI", "ESP", "Aimbot", "Player", "Extra" }
 
 local total = #files
@@ -28,7 +28,7 @@ for i, file in ipairs(files) do
         FH.lsText.Text = "Loading " .. file .. " page..."
     end
 
-    local url = base .. file .. ".lua?t=" .. tostring(math.floor(timestamp))
+    local url = base .. file .. "?t=" .. tostring(math.floor(timestamp))
     local ok, code = pcall(function() return game:HttpGet(url) end)
     if not ok or type(code) ~= "string" or code == "" then
         return fail("Error descargando " .. file)
