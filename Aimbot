@@ -1,36 +1,58 @@
 local FH = getgenv().FH
-if not FH then return end
-if FH.tabs and FH.tabs["Aimbot"] then return end
+if not FH or FH.aimLoaded then return end
+FH.aimLoaded = true
 
-FH.addTab("Aimbot")
+local C = FH.C
+local cfg = { on = false, team = false, wall = false, showFov = false, fov = 150, smooth = 40 }
 
-local aimConn = nil
-local fovCircle = nil
+local circle = Instance.new("Frame")
+circle.Name = "FH_FOV"
+circle.AnchorPoint = Vector2.new(.5, .5)
+circle.Position = UDim2.new(.5, 0, .5, 0)
+circle.BackgroundTransparency = 1
+circle.BorderSizePixel = 0
+circle.Visible = false
+circle.Parent = FH.sg
+Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+local cs = Instance.new("UIStroke", circle)
+cs.Color = C.accent
+cs.Thickness = 1.5
 
-local function getTarget(fov)
-    local cam = workspace.CurrentCamera
-    local center = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)
-    local best, bestDist = nil, fov
-    local aimPart = FH.est["Aimbot/Target"] or "Head"
-    local teamCheck = FH.est["Aimbot/Team Check"]
+local function updCircle()
+    local s = FH.us.Scale
+    if s <= 0 then s = 1 end
+    local d = cfg.fov * 2 / s
+    circle.Size = UDim2.fromOffset(d, d)
+    circle.Visible = cfg.on and cfg.showFov
+end
+
+local function isTeammate(p)
+    return FH.LP.Team ~= nil and p.Team == FH.LP.Team
+end
+
+local function getTarget(cam)
+    local vp = cam.ViewportSize
+    local center = Vector2.new(vp.X / 2, vp.Y / 2)
+    local best, bestD = nil, cfg.fov
 
     for _, p in ipairs(FH.PL:GetPlayers()) do
-        if p ~= FH.LP and p.Character then
+        if p ~= FH.LP and p.Character and not (cfg.team and isTeammate(p)) then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
-            local hrp = p.Character:FindFirstChild("HumanoidRootPart")
             local head = p.Character:FindFirstChild("Head")
-            if hum and hum.Health > 0 and hrp then
-                local targetPart = (aimPart == "Head" and head) or hrp
-                if targetPart then
-                    local sameTeam = (teamCheck and p.Team == FH.LP.Team)
-                    if not sameTeam then
-                        local scr, on = cam:WorldToViewportPoint(targetPart.Position)
-                        if on then
-                            local d = (Vector2.new(scr.X, scr.Y) - center).Magnitude
-                            if d < bestDist then
-                                bestDist = d
-                                best = {player=p, part=targetPart, hum=hum}
-                            end
+            if hum and head and hum.Health > 0 then
+                local pos, onScreen = cam:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local d = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                    if d < bestD then
+                        local visible = true
+                        if cfg.wall then
+                            local rp = RaycastParams.new()
+                            rp.FilterType = Enum.RaycastFilterType.Exclude
+                            rp.FilterDescendantsInstances = { FH.LP.Character, p.Character }
+                            visible = FH.WS:Raycast(cam.CFrame.Position, head.Position - cam.CFrame.Position, rp) == nil
+                        end
+                        if visible then
+                            best, bestD = head, d
                         end
                     end
                 end
@@ -40,18 +62,27 @@ local function getTarget(fov)
     return best
 end
 
-local function startAim()
-    if aimConn then return end
-    local smooth = FH.est["Aimbot/Smoothness"] or 0.3
-    local fov = FH.est["Aimbot/FOV"] or 150
-    aimConn = FH.RS.RenderStepped:Connect(function()
-        local t = getTarget(fov)
-        if not t then return end
-        local cam = workspace.CurrentCamera
-        local targetCF = CFrame.new(cam.CFrame.Position, t.part.Position)
-        cam.CFrame = cam.CFrame:Lerp(targetCF, math.clamp(smooth, 0.02, 1))
-    end)
-end
+FH.RS.RenderStepped:Connect(function()
+    updCircle()
+    if not cfg.on then return end
 
-local function stopAim()
-    if aimConn then aimConn:Disconnect
+    local touchOnly = FH.UI.TouchEnabled and not FH.UI.MouseEnabled
+    if not touchOnly and not FH.UI:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
+
+    local cam = FH.WS.CurrentCamera
+    if not cam then return end
+    local t = getTarget(cam)
+    if t then
+        local alpha = math.clamp(1 - cfg.smooth / 100, 0.02, 1)
+        cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, t.Position), alpha)
+    end
+end)
+
+FH.modules["Aimbot"] = function()
+    FH.crearOpcion("Aimbot", function(s) cfg.on = s end)
+    FH.crearOpcion("Aimbot Team Check", function(s) cfg.team = s end)
+    FH.crearOpcion("Wall Check", function(s) cfg.wall = s end)
+    FH.crearOpcion("Mostrar FOV", function(s) cfg.showFov = s end)
+    FH.crearSlider("FOV", 30, 500, 150, function(v) cfg.fov = v end)
+    FH.crearSlider("Suavidad", 0, 95, 40, function(v) cfg.smooth = v end)
+end
