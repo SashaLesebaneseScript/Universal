@@ -1,0 +1,85 @@
+local FH = getgenv().FH
+if not FH or FH.extraLoaded then return end
+FH.extraLoaded = true
+
+local L = game:GetService("Lighting")
+local cfg = { full = false, soft = false, nofog = false, afk = false }
+
+local orig = {
+    Brightness = L.Brightness,
+    ClockTime = L.ClockTime,
+    Ambient = L.Ambient,
+    OutdoorAmbient = L.OutdoorAmbient,
+    FogStart = L.FogStart,
+    FogEnd = L.FogEnd,
+}
+local atm = L:FindFirstChildOfClass("Atmosphere")
+local atmOrig = atm and { Density = atm.Density, Haze = atm.Haze }
+
+local function apply(d)
+    for k, v in pairs(d) do
+        if L[k] ~= v then L[k] = v end
+    end
+end
+
+local applied = false
+FH.RS.Heartbeat:Connect(function()
+    local any = cfg.full or cfg.soft or cfg.nofog
+    if any then
+        applied = true
+        local d = table.clone(orig)
+        if cfg.full then
+            d.Brightness = 2
+            d.ClockTime = 14
+            d.Ambient = Color3.new(1, 1, 1)
+            d.OutdoorAmbient = Color3.new(1, 1, 1)
+        elseif cfg.soft then
+            d.Brightness = 1.5
+            d.ClockTime = 14
+            d.Ambient = Color3.fromRGB(150, 150, 150)
+            d.OutdoorAmbient = Color3.fromRGB(150, 150, 150)
+        end
+        if cfg.nofog then
+            d.FogStart = 1e8
+            d.FogEnd = 1e9
+        end
+        apply(d)
+        if atm and atm.Parent then
+            if cfg.nofog then
+                atm.Density, atm.Haze = 0, 0
+            else
+                atm.Density, atm.Haze = atmOrig.Density, atmOrig.Haze
+            end
+        end
+    elseif applied then
+        applied = false
+        apply(orig)
+        if atm and atm.Parent then
+            atm.Density, atm.Haze = atmOrig.Density, atmOrig.Haze
+        end
+    end
+end)
+
+local afkConn
+local function setAfk(s)
+    if afkConn then afkConn:Disconnect() afkConn = nil end
+    if s then
+        afkConn = FH.LP.Idled:Connect(function()
+            local vu = game:GetService("VirtualUser")
+            vu:CaptureController()
+            vu:ClickButton2(Vector2.new())
+        end)
+    end
+end
+
+FH.modules["Extra"] = function()
+    FH.crearOpcion("FullBright", function(s) cfg.full = s end)
+    FH.crearOpcion("FullBright Suave", function(s) cfg.soft = s end)
+    FH.crearOpcion("No Fog", function(s) cfg.nofog = s end)
+    FH.crearOpcion("Anti AFK", setAfk)
+    FH.crearBotonAccion("Reset Character", function()
+        local c = FH.LP.Character
+        local h = c and c:FindFirstChildOfClass("Humanoid")
+        if h then h.Health = 0 end
+    end)
+end
