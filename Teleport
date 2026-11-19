@@ -19,25 +19,25 @@ end
 
 FH.modules["Teleport"].panel = function()
     FH.addLabel("Teleport", "teleport")
-    FH.addButton("Teleport", "Go to Spawn", function()
+    FH.addButton("Teleport", "go_spawn", function()
         local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
         if spawn then
             tweenTo(spawn.Position + Vector3.new(0, 3, 0))
         end
     end)
-    FH.addButton("Teleport", "Teleport to Nearest Player", function()
+    FH.addButton("Teleport", "go_player", function()
         local nearest = FH.nearest()
         if nearest and nearest.HRP then
             tweenTo(nearest.HRP.Position + Vector3.new(0, 3, 0))
         end
     end)
-    FH.addButton("Teleport", "Save Position", function()
+    FH.addButton("Teleport", "save_pos", function()
         local char = FH.LP.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
             FH.savedPos = char.HumanoidRootPart.CFrame
         end
     end)
-    FH.addButton("Teleport", "Load Position", function()
+    FH.addButton("Teleport", "load_pos", function()
         if FH.savedPos then
             tweenTo(FH.savedPos.Position)
         end
