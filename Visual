@@ -5,7 +5,7 @@ FH.modules["Visual"] = {}
 
 FH.modules["Visual"].panel = function()
     FH.addLabel("Visual", "visual")
-    FH.addToggle("Visual", "Remove Fog", function(on)
+    FH.addToggle("Visual", "remove_fog", function(on)
         local L = game:GetService("Lighting")
         if on then
             FH._fog = {FogEnd = L.FogEnd, FogStart = L.FogStart}
@@ -17,7 +17,7 @@ FH.modules["Visual"].panel = function()
             FH._fog = nil
         end
     end)
-    FH.addToggle("Visual", "Remove Shadows", function(on)
+    FH.addToggle("Visual", "remove_shadows", function(on)
         local L = game:GetService("Lighting")
         if on then
             FH._shadow = L.GlobalShadows
