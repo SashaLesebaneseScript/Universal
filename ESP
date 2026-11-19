@@ -1,12 +1,10 @@
 local FH = getgenv().FH
-if not FH then return end
-if FH.tabs and FH.tabs["ESP"] then return end
-
-FH.addTab("ESP")
+if not FH or FH.espLoaded then return end
+FH.espLoaded = true
+FH.modules["ESP"] = {}
 
 local drawing = {}
 local espConn = nil
-local fullbright = false
 
 local function createESP(player)
     local sg = FH.sg
@@ -15,7 +13,8 @@ local function createESP(player)
     box.BorderSizePixel = 0
     box.Visible = false
     local stroke = Instance.new("UIStroke", box)
-    stroke.Color = FH.C.accent; stroke.Thickness = 1.5
+    stroke.Color = FH.C.accent
+    stroke.Thickness = 1.5
 
     local nameLbl = Instance.new("TextLabel", sg)
     nameLbl.BackgroundTransparency = 1
@@ -56,19 +55,15 @@ local function clearESP()
     drawing = {}
 end
 
-local function getOptions()
-    return {
-        Box      = FH.est["ESP/Box ESP"],
-        Name     = FH.est["ESP/Name ESP"],
-        Health   = FH.est["ESP/Health ESP"],
-        Distance = FH.est["ESP/Distance"],
-        Max      = FH.est["ESP/Max Distance"] or 1000,
-    }
-end
-
 local function updateESP()
     local cam = workspace.CurrentCamera
-    local opts = getOptions()
+    local opts = {
+        Box = FH.est["ESP/Box ESP"],
+        Name = FH.est["ESP/Name ESP"],
+        Health = FH.est["ESP/Health ESP"],
+        Distance = FH.est["ESP/Distance"],
+        Max = FH.est["ESP/Max Distance"] or 1000,
+    }
     local myChar = FH.LP.Character
     local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
 
@@ -76,7 +71,6 @@ local function updateESP()
         if player ~= FH.LP then
             local d = drawing[player]
             if not d then createESP(player); d = drawing[player] end
-
             local char = player.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             local head = char and char:FindFirstChild("Head")
@@ -100,9 +94,8 @@ local function updateESP()
                     d.stroke.Color = (hum.Health < hum.MaxHealth * 0.3) and Color3.fromRGB(255,50,50) or FH.C.accent
 
                     d.name.Visible = opts.Name
-                    d.name.Position = UDim2.new(0, x + width/2, 0, y - 18)
-                    d.name.Size = UDim2.new(0, 200, 0, 16)
                     d.name.Position = UDim2.new(0, x + width/2 - 100, 0, y - 18)
+                    d.name.Size = UDim2.new(0, 200, 0, 16)
                     d.name.Text = player.Name
 
                     d.hpBG.Visible = opts.Health
@@ -110,27 +103,17 @@ local function updateESP()
                     d.hpBG.Size = UDim2.new(0, 4, 0, height)
                     d.hpFill.Size = UDim2.new(1, 0, hum.Health / hum.MaxHealth, 0)
                     d.hpFill.Position = UDim2.new(0, 0, 1 - hum.Health / hum.MaxHealth, 0)
-                    d.hpFill.BackgroundColor3 = Color3.fromRGB(
-                        255 * (1 - hum.Health/hum.MaxHealth),
-                        255 * (hum.Health/hum.MaxHealth),
-                        60
-                    )
+                    d.hpFill.BackgroundColor3 = Color3.fromRGB(255 * (1 - hum.Health/hum.MaxHealth), 255 * (hum.Health/hum.MaxHealth), 60)
 
                     d.dist.Visible = opts.Distance
                     d.dist.Position = UDim2.new(0, x + width/2 - 100, 0, y + height + 2)
                     d.dist.Size = UDim2.new(0, 200, 0, 14)
                     d.dist.Text = math.floor(dist) .. "m"
                 else
-                    d.box.Visible = false
-                    d.name.Visible = false
-                    d.hpBG.Visible = false
-                    d.dist.Visible = false
+                    d.box.Visible = false; d.name.Visible = false; d.hpBG.Visible = false; d.dist.Visible = false
                 end
             else
-                d.box.Visible = false
-                d.name.Visible = false
-                d.hpBG.Visible = false
-                d.dist.Visible = false
+                d.box.Visible = false; d.name.Visible = false; d.hpBG.Visible = false; d.dist.Visible = false
             end
         end
     end
@@ -145,35 +128,29 @@ local function setLoop(on)
     end
 end
 
-FH.addToggle("ESP", "Enable ESP", function(on) setLoop(on) end)
-FH.addToggle("ESP", "Box ESP", nil, true)
-FH.addToggle("ESP", "Name ESP", nil, true)
-FH.addToggle("ESP", "Health ESP", nil, true)
-FH.addToggle("ESP", "Distance", nil, true)
-FH.addSlider("ESP", "Max Distance", 100, 5000, 1000)
-FH.addLabel("ESP", "Entorno")
-FH.addToggle("ESP", "Fullbright", function(on)
-    local L = game:GetService("Lighting")
-    if on then
-        FH._fb = {Brightness=L.Brightness, Ambient=L.Ambient, OutdoorAmbient=L.OutdoorAmbient, FogEnd=L.FogEnd}
-        L.Brightness = 2
-        L.Ambient = Color3.new(1,1,1)
-        L.OutdoorAmbient = Color3.new(1,1,1)
-        L.FogEnd = 100000
-    elseif FH._fb then
-        L.Brightness = FH._fb.Brightness
-        L.Ambient = FH._fb.Ambient
-        L.OutdoorAmbient = FH._fb.OutdoorAmbient
-        L.FogEnd = FH._fb.FogEnd
-        FH._fb = nil
-    end
-end)
+FH.modules["ESP"].panel = function()
+    FH.addToggle("ESP", "enable_esp", function(on) setLoop(on) end)
+    FH.addToggle("ESP", "box_esp", nil, true)
+    FH.addToggle("ESP", "name_esp", nil, true)
+    FH.addToggle("ESP", "health_esp", nil, true)
+    FH.addToggle("ESP", "distance", nil, true)
+    FH.addSlider("ESP", "max_dist", 100, 5000, 1000)
+    FH.addLabel("ESP", "fullbright")
+    FH.addToggle("ESP", "fullbright", function(on)
+        local L = game:GetService("Lighting")
+        if on then
+            FH._fb = {Brightness=L.Brightness, Ambient=L.Ambient, OutdoorAmbient=L.OutdoorAmbient, FogEnd=L.FogEnd}
+            L.Brightness = 2; L.Ambient = Color3.new(1,1,1); L.OutdoorAmbient = Color3.new(1,1,1); L.FogEnd = 100000
+        elseif FH._fb then
+            L.Brightness = FH._fb.Brightness; L.Ambient = FH._fb.Ambient; L.OutdoorAmbient = FH._fb.OutdoorAmbient; L.FogEnd = FH._fb.FogEnd
+            FH._fb = nil
+        end
+    end)
+end
 
 FH.PL.PlayerRemoving:Connect(function(p)
     if drawing[p] then
-        for _, o in pairs(drawing[p]) do
-            if typeof(o) == "Instance" then o:Destroy() end
-        end
+        for _, o in pairs(drawing[p]) do if typeof(o) == "Instance" then o:Destroy() end end
         drawing[p] = nil
     end
 end)
