@@ -1,78 +1,63 @@
-local TweenService = game:GetService("TweenService")
-local base = "https://raw.githubusercontent.com/SashaLesebaneseScript/Fatasses-Hub-New-/main/"
-local files = {
-    "MainGUI",
-    "ESP",
-    "Aimbot",
-    "Player",
-    "Extra"
-}
+if getgenv().FH and getgenv().FH.p1 then return end
 
-local totalFiles = #files
-local errorOcurred = false
+local TweenService = game:GetService("TweenService")
+local base = "https://raw.githubusercontent.com/TU_USUARIO/TU_REPO/main/"
+local files = { "MainGUI", "ESP", "Aimbot", "Player", "Extra" }
+
+local total = #files
 local timestamp = tick()
 
-for i, file in ipairs(files) do
-    if getgenv().FH and getgenv().FH.lsText then
-        getgenv().FH.lsText.Text = "Loading " .. file .. " page..."
+local function fail(msg)
+    local FH = getgenv().FH
+    if FH and FH.lsText then
+        FH.lsText.Text = msg
+        FH.lsText.TextColor3 = Color3.fromRGB(255, 50, 50)
     end
-    
-    local startProgress = (i - 1) / totalFiles
-    local endProgress = i / totalFiles
-    
-    local url = base .. file .. "?t=" .. tostring(math.floor(timestamp))
-    local ok, code = pcall(function() return game:HttpGet(url, true) end)
-    
-    local waitTime = math.random(15, 25) / 10
-    
-    if getgenv().FH and getgenv().FH.lsFill then
-        local tween = TweenService:Create(getgenv().FH.lsFill, TweenInfo.new(waitTime, Enum.EasingStyle.Linear), {Size = UDim2.new(endProgress, 0, 1, 0)})
-        tween:Play()
-        tween.Completed:Wait()
-    else
-        task.wait(waitTime)
+    warn("[FH] " .. msg)
+    task.wait(3)
+    if FH then
+        if FH.ls then FH.ls:Destroy() end
+        if FH.sg then FH.sg:Destroy() end
     end
-    
-    if ok and code and code ~= "" and not code:find("404: Not Found") then
-        local fn = loadstring(code)
-        if fn then 
-            pcall(fn) 
-        end
-    else
-        errorOcurred = true
-    end
-    
-    task.wait(0.1)
+    getgenv().FH = nil
 end
 
-if getgenv().FH then
-    if getgenv().FH.lsText then
-        if errorOcurred then
-            getgenv().FH.lsText.Text = "Error loading."
-            getgenv().FH.lsText.TextColor3 = Color3.fromRGB(255, 50, 50)
-        else
-            getgenv().FH.lsText.Text = "Ready!"
-            if getgenv().FH.lsFill then
-                TweenService:Create(getgenv().FH.lsFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
-            end
-        end
+for i, file in ipairs(files) do
+    local FH = getgenv().FH
+    if FH and FH.lsText then
+        FH.lsText.Text = "Loading " .. file .. " page..."
     end
-    task.wait(0.8)
-    
-    if getgenv().FH.lsFrame then
-        TweenService:Create(getgenv().FH.lsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)}):Play()
-        task.wait(0.3)
+
+    local url = base .. file .. ".lua?t=" .. tostring(math.floor(timestamp))
+    local ok, code = pcall(function() return game:HttpGet(url) end)
+    if not ok or type(code) ~= "string" or code == "" then
+        return fail("Error descargando " .. file)
     end
-    
-    if getgenv().FH.ls then getgenv().FH.ls:Destroy() end
-    
-    if getgenv().FH.sg then 
-        getgenv().FH.sg.Enabled = true 
+
+    local fn, err = loadstring(code)
+    if not fn then
+        return fail("Error de sintaxis en " .. file)
     end
-    if getgenv().FH.fr then
-        getgenv().FH.fr.Size = UDim2.new(0, 0, 0, 0)
-        getgenv().FH.fr.Visible = true
-        TweenService:Create(getgenv().FH.fr, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, getgenv().FH.BW, 0, getgenv().FH.BH)}):Play()
+
+    local ok2, err2 = pcall(fn)
+    if not ok2 then
+        warn("[FH] " .. file .. ": " .. tostring(err2))
+        return fail("Error ejecutando " .. file)
     end
-    if getgenv().FH.panel then pcall(getgenv().FH.panel) end
+
+    FH = getgenv().FH
+    if FH and FH.lsFill then
+        TweenService:Create(FH.lsFill, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(i / total, 0, 1, 0)
+        }):Play()
+    end
+end
+
+local FH = getgenv().FH
+if FH then
+    FH.lsText.Text = "Done!"
+    task.wait(0.4)
+    pcall(FH.panel)
+    if FH.ls then FH.ls:Destroy() end
+    FH.sg.Enabled = true
 end
