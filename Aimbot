@@ -1,0 +1,57 @@
+local FH = getgenv().FH
+if not FH then return end
+if FH.tabs and FH.tabs["Aimbot"] then return end
+
+FH.addTab("Aimbot")
+
+local aimConn = nil
+local fovCircle = nil
+
+local function getTarget(fov)
+    local cam = workspace.CurrentCamera
+    local center = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)
+    local best, bestDist = nil, fov
+    local aimPart = FH.est["Aimbot/Target"] or "Head"
+    local teamCheck = FH.est["Aimbot/Team Check"]
+
+    for _, p in ipairs(FH.PL:GetPlayers()) do
+        if p ~= FH.LP and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+            local head = p.Character:FindFirstChild("Head")
+            if hum and hum.Health > 0 and hrp then
+                local targetPart = (aimPart == "Head" and head) or hrp
+                if targetPart then
+                    local sameTeam = (teamCheck and p.Team == FH.LP.Team)
+                    if not sameTeam then
+                        local scr, on = cam:WorldToViewportPoint(targetPart.Position)
+                        if on then
+                            local d = (Vector2.new(scr.X, scr.Y) - center).Magnitude
+                            if d < bestDist then
+                                bestDist = d
+                                best = {player=p, part=targetPart, hum=hum}
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return best
+end
+
+local function startAim()
+    if aimConn then return end
+    local smooth = FH.est["Aimbot/Smoothness"] or 0.3
+    local fov = FH.est["Aimbot/FOV"] or 150
+    aimConn = FH.RS.RenderStepped:Connect(function()
+        local t = getTarget(fov)
+        if not t then return end
+        local cam = workspace.CurrentCamera
+        local targetCF = CFrame.new(cam.CFrame.Position, t.part.Position)
+        cam.CFrame = cam.CFrame:Lerp(targetCF, math.clamp(smooth, 0.02, 1))
+    end)
+end
+
+local function stopAim()
+    if aimConn then aimConn:Disconnect
