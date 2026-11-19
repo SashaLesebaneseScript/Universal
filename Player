@@ -1,0 +1,103 @@
+local FH = getgenv().FH
+if not FH or FH.playerLoaded then return end
+FH.playerLoaded = true
+
+local cfg = { speed = false, speedVal = 50, jump = false, jumpVal = 100, inf = false, fly = false, flyVal = 60 }
+local orig = { ws = 16, jp = 50, up = true }
+local infConn
+local bv, bg
+
+local function getHum()
+    local c = FH.LP.Character
+    return c and c:FindFirstChildOfClass("Humanoid"), c and c:FindFirstChild("HumanoidRootPart")
+end
+
+local function stopFly()
+    if bv then bv:Destroy() bv = nil end
+    if bg then bg:Destroy() bg = nil end
+    local hum = getHum()
+    if hum then hum.PlatformStand = false end
+end
+
+FH.RS.Heartbeat:Connect(function()
+    local hum, hrp = getHum()
+    if not hum then return end
+
+    if cfg.speed then hum.WalkSpeed = cfg.speedVal end
+    if cfg.jump then
+        hum.UseJumpPower = true
+        hum.JumpPower = cfg.jumpVal
+    end
+
+    if cfg.fly and hrp then
+        if not bv or not bv.Parent then
+            bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            bv.Velocity = Vector3.zero
+            bv.Parent = hrp
+        end
+        if not bg or not bg.Parent then
+            bg = Instance.new("BodyGyro")
+            bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bg.P = 9e4
+            bg.Parent = hrp
+        end
+        hum.PlatformStand = true
+
+        local cam = FH.WS.CurrentCamera
+        local md = hum.MoveDirection
+        local vel = Vector3.zero
+        if md.Magnitude > 0 then
+            local look = cam.CFrame.LookVector
+            local flat = Vector3.new(look.X, 0, look.Z)
+            local fw = flat.Magnitude > 0.01 and md:Dot(flat.Unit) or 0
+            vel = md * cfg.flyVal + Vector3.new(0, look.Y * fw * cfg.flyVal, 0)
+        end
+        if FH.UI:IsKeyDown(Enum.KeyCode.Space) then vel = vel + Vector3.new(0, cfg.flyVal, 0) end
+        if FH.UI:IsKeyDown(Enum.KeyCode.LeftControl) then vel = vel - Vector3.new(0, cfg.flyVal, 0) end
+        bv.Velocity = vel
+        bg.CFrame = cam.CFrame
+    end
+end)
+
+FH.modules["Player"] = function()
+    FH.crearOpcion("Speed", function(s)
+        cfg.speed = s
+        local hum = getHum()
+        if s then
+            if hum then orig.ws = hum.WalkSpeed end
+        elseif hum then
+            hum.WalkSpeed = orig.ws
+        end
+    end)
+    FH.crearSlider("Speed Value", 16, 200, 50, function(v) cfg.speedVal = v end)
+
+    FH.crearOpcion("Jump Power", function(s)
+        cfg.jump = s
+        local hum = getHum()
+        if s then
+            if hum then orig.jp, orig.up = hum.JumpPower, hum.UseJumpPower end
+        elseif hum then
+            hum.UseJumpPower = orig.up
+            hum.JumpPower = orig.jp
+        end
+    end)
+    FH.crearSlider("Jump Value", 50, 300, 100, function(v) cfg.jumpVal = v end)
+
+    FH.crearOpcion("Infinite Jump", function(s)
+        cfg.inf = s
+        if infConn then infConn:Disconnect() infConn = nil end
+        if s then
+            infConn = FH.UI.JumpRequest:Connect(function()
+                local hum = getHum()
+                if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+            end)
+        end
+    end)
+
+    FH.crearOpcion("Fly", function(s)
+        cfg.fly = s
+        if not s then stopFly() end
+    end)
+    FH.crearSlider("Fly Speed", 20, 200, 60, function(v) cfg.flyVal = v end)
+end
