@@ -45,7 +45,9 @@ FH.locales = {
         target_part = "Target Part", hold_rmb = "Hold RMB", always = "Always",
         speed = "Speed", jump = "Jump Power", fly = "Fly", noclip = "No Clip",
         infinite_jump = "Infinite Jump", gravity = "Gravity", bhop = "Bunny Hop",
-        anti_void = "Anti Void", language = "Language"
+        anti_void = "Anti Void", language = "Language", remove_fog = "Remove Fog",
+        remove_shadows = "Remove Shadows", go_spawn = "Go to Spawn", go_player = "TP to Nearest",
+        save_pos = "Save Position", load_pos = "Load Position"
     },
     es = {
         esp = "ESP", aimbot = "Aimbot", player = "Jugador", extra = "Extra",
@@ -59,7 +61,9 @@ FH.locales = {
         hold_rmb = "Mantener RMB", always = "Siempre", speed = "Velocidad",
         jump = "Salto", fly = "Volar", noclip = "Atravesar paredes",
         infinite_jump = "Salto infinito", gravity = "Gravedad", bhop = "Bunny Hop",
-        anti_void = "Anti Vacío", language = "Idioma"
+        anti_void = "Anti Vacío", language = "Idioma", remove_fog = "Quitar niebla",
+        remove_shadows = "Quitar sombras", go_spawn = "Ir al Spawn", go_player = "TP al más cercano",
+        save_pos = "Guardar Posición", load_pos = "Cargar Posición"
     },
     pt = {
         esp = "ESP", aimbot = "Aimbot", player = "Jogador", extra = "Extra",
@@ -73,7 +77,9 @@ FH.locales = {
         hold_rmb = "Segurar RMB", always = "Sempre", speed = "Velocidade",
         jump = "Pulo", fly = "Voar", noclip = "Atravessar paredes",
         infinite_jump = "Pulo infinito", gravity = "Gravidade", bhop = "Bunny Hop",
-        anti_void = "Anti Vazio", language = "Idioma"
+        anti_void = "Anti Vazio", language = "Idioma", remove_fog = "Remover névoa",
+        remove_shadows = "Remover sombras", go_spawn = "Ir para Spawn", go_player = "TP para o mais próximo",
+        save_pos = "Salvar Posição", load_pos = "Carregar Posição"
     }
 }
 FH.L = function(key) 
@@ -94,12 +100,22 @@ FH.theme = function(obj, prop, key)
 end
 FH.themeFn = function(fn) fn(); table.insert(FH.themeFns, fn) end
 
-FH.presets = { Pink = Color3.fromRGB(255,105,180), Purple = Color3.fromRGB(170,110,255), Blue = Color3.fromRGB(80,150,255), Cyan = Color3.fromRGB(60,220,230), Green = Color3.fromRGB(90,230,130), Orange = Color3.fromRGB(255,160,60), Red = Color3.fromRGB(255,80,80) }
-FH.setAccent = function(name)
-    local col = FH.presets[name]; if not col then return end
-    C.accent = col; C.accent2 = col:Lerp(Color3.new(0,0,0),0.25); C.border = col:Lerp(Color3.new(1,1,1),0.2)
-    for _, t in ipairs(FH.themeList) do if t[1].Parent then t[1][t[2]] = C[t[3]] end end
-    for _, fn in ipairs(FH.themeFns) do pcall(fn) end
+FH.SND = { button="rbxassetid://9119717523", tab_switch="rbxassetid://14133663945", toggle_on="rbxassetid://9119717523", toggle_off="rbxassetid://103866342467024", hover="rbxassetid://14133663945" }
+FH.sfx = function(n, v, p)
+    local id = FH.SND[n]; if not id then return end
+    local s = Instance.new("Sound"); s.SoundId = id; s.Volume = v or 1; s.PlaybackSpeed = p or 1
+    s.Parent = FH.SS; s:Play(); s.Ended:Connect(function() s:Destroy() end)
+end
+
+FH.animar = function(obj)
+    local base = obj.Size
+    obj.MouseEnter:Connect(function()
+        FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = base + UDim2.new(0,6,0,6)}):Play()
+        pcall(function() FH.sfx("hover", 0.35, 1) end)
+    end)
+    obj.MouseLeave:Connect(function()
+        FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = base}):Play()
+    end)
 end
 
 FH.unload = function()
@@ -143,13 +159,6 @@ Instance.new("UICorner", barFill).CornerRadius = UDim.new(1,0)
 FH.lsFill = barFill
 local barGradient = Instance.new("UIGradient", barFill)
 barGradient.Color = ColorSequence.new(C.accent, Color3.fromRGB(147,112,219))
-
-FH.SND = { button="rbxassetid://9119717523", tab_switch="rbxassetid://14133663945", toggle_on="rbxassetid://9119717523", toggle_off="rbxassetid://103866342467024", hover="rbxassetid://14133663945" }
-FH.sfx = function(n, v, p)
-    local id = FH.SND[n]; if not id then return end
-    local s = Instance.new("Sound"); s.SoundId = id; s.Volume = v or 1; s.PlaybackSpeed = p or 1
-    s.Parent = FH.SS; s:Play(); s.Ended:Connect(function() s:Destroy() end)
-end
 
 local sg = Instance.new("ScreenGui")
 sg.Name = "FatassesHub"; sg.ResetOnSpawn = false; sg.IgnoreGuiInset = true
@@ -243,6 +252,18 @@ pn.BackgroundColor3 = C.bg_dark; pn.BackgroundTransparency = .4; pn.BorderSizePi
 Instance.new("UICorner", pn).CornerRadius = UDim.new(0, 12)
 FH.pn = pn
 
+local oc = Instance.new("ScrollingFrame", FH.pn)
+oc.Size = UDim2.new(1, -10, 1, -10)
+oc.Position = UDim2.new(0, 5, 0, 5)
+oc.BackgroundTransparency = 1
+oc.BorderSizePixel = 0
+oc.ScrollBarThickness = 3
+oc.CanvasSize = UDim2.new(0,0,0,0)
+oc.AutomaticCanvasSize = Enum.AutomaticSize.Y
+FH.oc = oc
+local ol = Instance.new("UIListLayout", oc)
+ol.Padding = UDim.new(0, 8)
+
 local tabList = {
     { "ESP", "esp" },
     { "Aimbot", "aimbot" },
@@ -302,29 +323,6 @@ end
 
 for _, pair in ipairs(tabList) do mkTab(pair[1], pair[2]) end
 if tabs["ESP"] then tabs["ESP"].S("sel") end
-
-local oc = Instance.new("ScrollingFrame", FH.pn)
-oc.Size = UDim2.new(1, -10, 1, -10)
-oc.Position = UDim2.new(0, 5, 0, 5)
-oc.BackgroundTransparency = 1
-oc.BorderSizePixel = 0
-oc.ScrollBarThickness = 3
-oc.CanvasSize = UDim2.new(0,0,0,0)
-oc.AutomaticCanvasSize = Enum.AutomaticSize.Y
-FH.oc = oc
-local ol = Instance.new("UIListLayout", oc)
-ol.Padding = UDim.new(0, 8)
-
-FH.animar = function(obj)
-    local base = obj.Size
-    obj.MouseEnter:Connect(function()
-        FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = base + UDim2.new(0,6,0,6)}):Play()
-        pcall(function() FH.sfx("hover", 0.35, 1) end)
-    end)
-    obj.MouseLeave:Connect(function()
-        FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = base}):Play()
-    end)
-end
 
 FH.addToggle = function(tabName, labelKey, cb, default)
     local tab = FH.tabs[tabName]; if not tab then return end
