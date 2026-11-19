@@ -27,72 +27,16 @@ FH.C = {
 }
 local C = FH.C
 
-FH.est, FH.val, FH.modules = {}, {}, {}
-FH.conns, FH.unloadFns = {}, {}
+FH.est, FH.modules = {}, {}
+FH.conns = {}
 FH.themeList, FH.themeFns = {}, {}
 FH.pestana = "ESP"
-FH.lang = "en"
-
-FH.locales = {
-    en = {
-        esp = "ESP", aimbot = "Aimbot", player = "Player", extra = "Extra",
-        settings = "Settings", visual = "Visual", teleport = "Teleport",
-        enable_esp = "Enable ESP", box_esp = "Box ESP", name_esp = "Name ESP",
-        health_esp = "Health ESP", distance = "Distance", max_dist = "Max Distance",
-        fullbright = "Fullbright", enable_aimbot = "Enable Aimbot",
-        team_check = "Team Check", wall_check = "Wall Check", friends = "Friends",
-        show_fov = "Show FOV", fov = "FOV", smooth = "Smoothness",
-        target_part = "Target Part", hold_rmb = "Hold RMB", always = "Always",
-        speed = "Speed", jump = "Jump Power", fly = "Fly", noclip = "No Clip",
-        infinite_jump = "Infinite Jump", gravity = "Gravity", bhop = "Bunny Hop",
-        anti_void = "Anti Void", language = "Language", remove_fog = "Remove Fog",
-        remove_shadows = "Remove Shadows", go_spawn = "Go to Spawn", go_player = "TP to Nearest",
-        save_pos = "Save Position", load_pos = "Load Position"
-    },
-    es = {
-        esp = "ESP", aimbot = "Aimbot", player = "Jugador", extra = "Extra",
-        settings = "Ajustes", visual = "Visual", teleport = "Teleport",
-        enable_esp = "Activar ESP", box_esp = "Caja ESP", name_esp = "Nombre ESP",
-        health_esp = "Salud ESP", distance = "Distancia", max_dist = "Distancia Máx",
-        fullbright = "Visión nocturna", enable_aimbot = "Activar Aimbot",
-        team_check = "Ignorar equipo", wall_check = "Ignorar paredes",
-        friends = "Ignorar amigos", show_fov = "Mostrar FOV", fov = "FOV",
-        smooth = "Suavizado", target_part = "Parte objetivo",
-        hold_rmb = "Mantener RMB", always = "Siempre", speed = "Velocidad",
-        jump = "Salto", fly = "Volar", noclip = "Atravesar paredes",
-        infinite_jump = "Salto infinito", gravity = "Gravedad", bhop = "Bunny Hop",
-        anti_void = "Anti Vacío", language = "Idioma", remove_fog = "Quitar niebla",
-        remove_shadows = "Quitar sombras", go_spawn = "Ir al Spawn", go_player = "TP al más cercano",
-        save_pos = "Guardar Posición", load_pos = "Cargar Posición"
-    },
-    pt = {
-        esp = "ESP", aimbot = "Aimbot", player = "Jogador", extra = "Extra",
-        settings = "Configurações", visual = "Visual", teleport = "Teleporte",
-        enable_esp = "Ativar ESP", box_esp = "Caixa ESP", name_esp = "Nome ESP",
-        health_esp = "Vida ESP", distance = "Distância", max_dist = "Distância Máx",
-        fullbright = "Visão noturna", enable_aimbot = "Ativar Aimbot",
-        team_check = "Ignorar equipe", wall_check = "Ignorar paredes",
-        friends = "Ignorar amigos", show_fov = "Mostrar FOV", fov = "FOV",
-        smooth = "Suavização", target_part = "Parte alvo",
-        hold_rmb = "Segurar RMB", always = "Sempre", speed = "Velocidade",
-        jump = "Pulo", fly = "Voar", noclip = "Atravessar paredes",
-        infinite_jump = "Pulo infinito", gravity = "Gravidade", bhop = "Bunny Hop",
-        anti_void = "Anti Vazio", language = "Idioma", remove_fog = "Remover névoa",
-        remove_shadows = "Remover sombras", go_spawn = "Ir para Spawn", go_player = "TP para o mais próximo",
-        save_pos = "Salvar Posição", load_pos = "Carregar Posição"
-    }
-}
-FH.L = function(key) 
-    local t = FH.locales[FH.lang] or FH.locales.en
-    return t[key] or key 
-end
 
 FH.bind = function(sig, fn)
     local c = sig:Connect(fn)
     table.insert(FH.conns, c)
     return c
 end
-FH.onUnload = function(fn) table.insert(FH.unloadFns, fn) end
 
 FH.theme = function(obj, prop, key)
     obj[prop] = C[key]
@@ -116,14 +60,6 @@ FH.animar = function(obj)
     obj.MouseLeave:Connect(function()
         FH.TW:Create(obj, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = base}):Play()
     end)
-end
-
-FH.unload = function()
-    for _, fn in ipairs(FH.unloadFns) do pcall(fn) end
-    for _, c in ipairs(FH.conns) do pcall(function() c:Disconnect() end) end
-    if FH.ls then pcall(function() FH.ls:Destroy() end) end
-    if FH.sg then pcall(function() FH.sg:Destroy() end) end
-    getgenv().FH = nil
 end
 
 pcall(function()
@@ -204,7 +140,7 @@ tl.Text = "FATASSES HUB"; tl.TextSize = 18; tl.Font = Enum.Font.GothamBlack; tl.
 FH.theme(tl, "TextColor3", "accent")
 local sub = Instance.new("TextLabel", tb)
 sub.Size = UDim2.new(0,220,0,14); sub.Position = UDim2.new(0,58,0,28); sub.BackgroundTransparency = 1
-sub.Text = "v3.0 | Beta"; sub.TextSize = 12; sub.Font = Enum.Font.GothamBold; sub.TextXAlignment = Enum.TextXAlignment.Left
+sub.Text = "v3.1 | Beta"; sub.TextSize = 12; sub.Font = Enum.Font.GothamBold; sub.TextXAlignment = Enum.TextXAlignment.Left
 FH.theme(sub, "TextColor3", "text_sub")
 
 local cb = Instance.new("TextButton", tb)
@@ -265,18 +201,18 @@ local ol = Instance.new("UIListLayout", oc)
 ol.Padding = UDim.new(0, 8)
 
 local tabList = {
-    { "ESP", "esp" },
-    { "Aimbot", "aimbot" },
-    { "Player", "player" },
-    { "Visual", "visual" },
-    { "Teleport", "teleport" },
-    { "Extra", "extra" },
-    { "Settings", "settings" }
+    { "ESP", "ESP" },
+    { "Aimbot", "Aimbot" },
+    { "Player", "Player" },
+    { "Visual", "Visual" },
+    { "Teleport", "Teleport" },
+    { "Extra", "Extra" },
+    { "Settings", "Settings" }
 }
 
 local tabs = {}
 FH.tabs = tabs
-local function mkTab(internal, locKey)
+local function mkTab(internal, displayName)
     local t = Instance.new("TextButton", FH.sb)
     t.Size = UDim2.new(1, -12, 0, 38)
     t.BackgroundColor3 = C.bg_card
@@ -289,7 +225,7 @@ local function mkTab(internal, locKey)
     l.Size = UDim2.new(1, -10, 1, 0)
     l.Position = UDim2.new(0, 5, 0, 0)
     l.BackgroundTransparency = 1
-    l.Text = FH.L(locKey)
+    l.Text = displayName
     l.TextColor3 = C.text
     l.TextScaled = false
     l.TextSize = 16
@@ -318,15 +254,15 @@ local function mkTab(internal, locKey)
         task.spawn(function() pcall(FH.panel) end)
     end)
     FH.animar(t)
-    tabs[internal] = { S = setSt, label = l, locKey = locKey }
+    tabs[internal] = { S = setSt, label = l }
 end
 
 for _, pair in ipairs(tabList) do mkTab(pair[1], pair[2]) end
 if tabs["ESP"] then tabs["ESP"].S("sel") end
 
-FH.addToggle = function(tabName, labelKey, cb, default)
+FH.addToggle = function(tabName, labelText, cb, default)
     local tab = FH.tabs[tabName]; if not tab then return end
-    local key = tabName .. "/" .. labelKey
+    local key = tabName .. "/" .. labelText
     FH.est[key] = FH.est[key] ~= nil and FH.est[key] or (default or false)
     local o = Instance.new("Frame", oc)
     o.Size = UDim2.new(1,0,0,44); o.BackgroundColor3 = C.bg_card; o.BackgroundTransparency = .2; o.BorderSizePixel = 0
@@ -334,7 +270,7 @@ FH.addToggle = function(tabName, labelKey, cb, default)
     local s = Instance.new("UIStroke", o); s.Color = C.border; s.Thickness = 1; s.Transparency = .4
     local l = Instance.new("TextLabel", o)
     l.Size = UDim2.new(1,-70,1,0); l.Position = UDim2.new(0,15,0,0); l.BackgroundTransparency = 1
-    l.Text = FH.L(labelKey); l.TextColor3 = C.text; l.TextSize = 14; l.Font = Enum.Font.GothamBold
+    l.Text = labelText; l.TextColor3 = C.text; l.TextSize = 14; l.Font = Enum.Font.GothamBold
     l.TextXAlignment = Enum.TextXAlignment.Left; l.TextWrapped = true
     local sw = Instance.new("TextButton", o)
     sw.Size = UDim2.new(0,48,0,26); sw.Position = UDim2.new(1,-60,.5,-13); sw.BackgroundColor3 = C.bg_dark; sw.Text = ""; sw.BorderSizePixel = 0; sw.AutoButtonColor = false
@@ -373,14 +309,14 @@ FH.addToggle = function(tabName, labelKey, cb, default)
     FH.animar(sw)
 end
 
-FH.addButton = function(tabName, labelKey, onFire)
+FH.addButton = function(tabName, labelText, onFire)
     local tab = FH.tabs[tabName]; if not tab then return end
     local b = Instance.new("TextButton", oc)
     b.Size = UDim2.new(1,0,0,34); b.BackgroundColor3 = C.bg_card; b.BackgroundTransparency = .2; b.Text = ""; b.BorderSizePixel = 0; b.AutoButtonColor = false
     Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
     local l = Instance.new("TextLabel", b)
     l.Size = UDim2.new(1,-16,1,0); l.Position = UDim2.new(0,14,0,0); l.BackgroundTransparency = 1
-    l.Text = FH.L(labelKey); l.TextColor3 = C.text; l.TextSize = 14; l.Font = Enum.Font.GothamBold; l.TextXAlignment = Enum.TextXAlignment.Left
+    l.Text = labelText; l.TextColor3 = C.text; l.TextSize = 14; l.Font = Enum.Font.GothamBold; l.TextXAlignment = Enum.TextXAlignment.Left
     b.MouseButton1Click:Connect(function()
         FH.sfx("button",2,1.3)
         pcall(onFire)
@@ -388,16 +324,16 @@ FH.addButton = function(tabName, labelKey, onFire)
     FH.animar(b)
 end
 
-FH.addSlider = function(tabName, labelKey, min, max, default, cb)
+FH.addSlider = function(tabName, labelText, min, max, default, cb)
     local tab = FH.tabs[tabName]; if not tab then return end
-    local key = tabName .. "/" .. labelKey
+    local key = tabName .. "/" .. labelText
     FH.est[key] = FH.est[key] or default
     local frame = Instance.new("Frame", oc)
     frame.Size = UDim2.new(1,0,0,56); frame.BackgroundColor3 = C.bg_card; frame.BackgroundTransparency = 0.2; frame.BorderSizePixel = 0
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0,10)
     local lbl = Instance.new("TextLabel", frame)
     lbl.Size = UDim2.new(1,-20,0,24); lbl.Position = UDim2.new(0,10,0,4); lbl.BackgroundTransparency = 1
-    lbl.Text = FH.L(labelKey); lbl.TextColor3 = C.text; lbl.Font = Enum.Font.GothamBold; lbl.TextSize = 14; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Text = labelText; lbl.TextColor3 = C.text; lbl.Font = Enum.Font.GothamBold; lbl.TextSize = 14; lbl.TextXAlignment = Enum.TextXAlignment.Left
     local valLbl = Instance.new("TextLabel", frame)
     valLbl.Size = UDim2.new(1,-20,0,24); valLbl.Position = UDim2.new(0,10,0,4); valLbl.BackgroundTransparency = 1
     valLbl.Text = tostring(FH.est[key]); valLbl.TextColor3 = C.accent; valLbl.Font = Enum.Font.GothamBold; valLbl.TextSize = 14; valLbl.TextXAlignment = Enum.TextXAlignment.Right
@@ -433,11 +369,11 @@ FH.addSlider = function(tabName, labelKey, min, max, default, cb)
     end)
 end
 
-FH.addLabel = function(tabName, textKey)
+FH.addLabel = function(tabName, text)
     local tab = FH.tabs[tabName]; if not tab then return end
     local l = Instance.new("TextLabel", oc)
     l.Size = UDim2.new(1,0,0,24); l.BackgroundTransparency = 1
-    l.Text = FH.L(textKey); l.TextColor3 = C.accent; l.Font = Enum.Font.GothamBlack; l.TextSize = 13; l.TextXAlignment = Enum.TextXAlignment.Left
+    l.Text = text; l.TextColor3 = C.accent; l.Font = Enum.Font.GothamBlack; l.TextSize = 13; l.TextXAlignment = Enum.TextXAlignment.Left
 end
 
 FH.panel = function()
@@ -450,8 +386,10 @@ end
 
 local th = Instance.new("Frame")
 th.Size = UDim2.new(0,60,0,60); th.Position = UDim2.new(0,20,0,20); th.BackgroundTransparency = 1; th.Parent = sg
+FH.th = th
 local tbtn = Instance.new("ImageButton", th)
 tbtn.Size = UDim2.new(1,0,1,0); tbtn.BackgroundColor3 = C.accent; tbtn.Image = "rbxassetid://13448937025"; tbtn.ScaleType = Enum.ScaleType.Crop; tbtn.BorderSizePixel = 0; tbtn.AutoButtonColor = false
+FH.tbtn = tbtn
 Instance.new("UICorner", tbtn).CornerRadius = UDim.new(1,0)
 local stBtn = Instance.new("UIStroke", tbtn); stBtn.Color = C.accent2; stBtn.Thickness = 2
 local isOpen, isAnim = false, false
