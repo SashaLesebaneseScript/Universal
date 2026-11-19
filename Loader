@@ -7,8 +7,7 @@ local files = {
     "Player",
     "Visual",
     "Teleport",
-    "Settings",
-    "Extra"
+    "Settings"
 }
 
 local totalFiles = #files
@@ -21,7 +20,7 @@ for i, file in ipairs(files) do
     local endProgress = i / totalFiles
     local url = base .. file .. "?t=" .. tostring(math.floor(timestamp))
     local ok, code = pcall(function() return game:HttpGet(url, true) end)
-    local waitTime = math.random(15, 25) / 10
+    local waitTime = math.random(10, 20) / 10
     if getgenv().FH and getgenv().FH.lsFill then
         local tween = TweenService:Create(getgenv().FH.lsFill, TweenInfo.new(waitTime, Enum.EasingStyle.Linear), {Size = UDim2.new(endProgress, 0, 1, 0)})
         tween:Play()
