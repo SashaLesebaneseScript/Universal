@@ -4,7 +4,7 @@ FH.espLoaded = true
 FH.modules["ESP"] = {}
 
 local drawing = {}
-local espConn = nil
+local espRunning = false
 
 local function createESP(player)
     local sg = FH.sg
@@ -38,7 +38,7 @@ local function createESP(player)
 
     local distLbl = Instance.new("TextLabel", sg)
     distLbl.BackgroundTransparency = 1
-    distLbl.TextColor3 = FH.C.accent4
+    distLbl.TextColor3 = FH.C.accent2
     distLbl.Font = Enum.Font.GothamBold
     distLbl.TextSize = 11
     distLbl.Visible = false
@@ -56,87 +56,84 @@ local function clearESP()
 end
 
 local function updateESP()
-    local cam = workspace.CurrentCamera
-    local opts = {
-        Box = FH.est["ESP/Box ESP"],
-        Name = FH.est["ESP/Name ESP"],
-        Health = FH.est["ESP/Health ESP"],
-        Distance = FH.est["ESP/Distance"],
-        Max = FH.est["ESP/Max Distance"] or 1000,
-    }
-    local myChar = FH.LP.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    while espRunning do
+        local cam = workspace.CurrentCamera
+        local opts = {
+            Box = FH.est["ESP/Box ESP"],
+            Name = FH.est["ESP/Name ESP"],
+            Health = FH.est["ESP/Health ESP"],
+            Distance = FH.est["ESP/Distance"],
+            Max = FH.est["ESP/Max Distance"] or 1000,
+        }
+        local myChar = FH.LP.Character
+        local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
 
-    for _, player in ipairs(FH.PL:GetPlayers()) do
-        if player ~= FH.LP then
-            local d = drawing[player]
-            if not d then createESP(player); d = drawing[player] end
-            local char = player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local head = char and char:FindFirstChild("Head")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
+        for _, player in ipairs(FH.PL:GetPlayers()) do
+            if player ~= FH.LP then
+                local d = drawing[player]
+                if not d then createESP(player); d = drawing[player] end
+                local char = player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local head = char and char:FindFirstChild("Head")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-            if hrp and head and hum and hum.Health > 0 and myHRP then
-                local dist = (myHRP.Position - hrp.Position).Magnitude
-                local headPos = cam:WorldToViewportPoint(head.Position + Vector3.new(0, 0.8, 0))
-                local hrpPos = cam:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
-                local onScreen = (headPos.Z > 0)
+                if hrp and head and hum and hum.Health > 0 and myHRP then
+                    local dist = (myHRP.Position - hrp.Position).Magnitude
+                    local headPos = cam:WorldToViewportPoint(head.Position + Vector3.new(0, 0.8, 0))
+                    local hrpPos = cam:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
+                    local onScreen = (headPos.Z > 0)
 
-                if onScreen and dist <= opts.Max then
-                    local height = math.abs(headPos.Y - hrpPos.Y)
-                    local width = height / 2
-                    local x = math.min(headPos.X, hrpPos.X) - width / 2
-                    local y = math.min(headPos.Y, hrpPos.Y)
+                    if onScreen and dist <= opts.Max then
+                        local height = math.abs(headPos.Y - hrpPos.Y)
+                        local width = height / 2
+                        local x = math.min(headPos.X, hrpPos.X) - width / 2
+                        local y = math.min(headPos.Y, hrpPos.Y)
 
-                    d.box.Visible = opts.Box
-                    d.box.Position = UDim2.new(0, x, 0, y)
-                    d.box.Size = UDim2.new(0, width, 0, height)
-                    d.stroke.Color = (hum.Health < hum.MaxHealth * 0.3) and Color3.fromRGB(255,50,50) or FH.C.accent
+                        d.box.Visible = opts.Box
+                        d.box.Position = UDim2.new(0, x, 0, y)
+                        d.box.Size = UDim2.new(0, width, 0, height)
+                        d.stroke.Color = (hum.Health < hum.MaxHealth * 0.3) and Color3.fromRGB(255,50,50) or FH.C.accent
 
-                    d.name.Visible = opts.Name
-                    d.name.Position = UDim2.new(0, x + width/2 - 100, 0, y - 18)
-                    d.name.Size = UDim2.new(0, 200, 0, 16)
-                    d.name.Text = player.Name
+                        d.name.Visible = opts.Name
+                        d.name.Position = UDim2.new(0, x + width/2 - 100, 0, y - 18)
+                        d.name.Size = UDim2.new(0, 200, 0, 16)
+                        d.name.Text = player.Name
 
-                    d.hpBG.Visible = opts.Health
-                    d.hpBG.Position = UDim2.new(0, x - 8, 0, y)
-                    d.hpBG.Size = UDim2.new(0, 4, 0, height)
-                    d.hpFill.Size = UDim2.new(1, 0, hum.Health / hum.MaxHealth, 0)
-                    d.hpFill.Position = UDim2.new(0, 0, 1 - hum.Health / hum.MaxHealth, 0)
-                    d.hpFill.BackgroundColor3 = Color3.fromRGB(255 * (1 - hum.Health/hum.MaxHealth), 255 * (hum.Health/hum.MaxHealth), 60)
+                        d.hpBG.Visible = opts.Health
+                        d.hpBG.Position = UDim2.new(0, x - 8, 0, y)
+                        d.hpBG.Size = UDim2.new(0, 4, 0, height)
+                        d.hpFill.Size = UDim2.new(1, 0, hum.Health / hum.MaxHealth, 0)
+                        d.hpFill.Position = UDim2.new(0, 0, 1 - hum.Health / hum.MaxHealth, 0)
+                        d.hpFill.BackgroundColor3 = Color3.fromRGB(255 * (1 - hum.Health/hum.MaxHealth), 255 * (hum.Health/hum.MaxHealth), 60)
 
-                    d.dist.Visible = opts.Distance
-                    d.dist.Position = UDim2.new(0, x + width/2 - 100, 0, y + height + 2)
-                    d.dist.Size = UDim2.new(0, 200, 0, 14)
-                    d.dist.Text = math.floor(dist) .. "m"
+                        d.dist.Visible = opts.Distance
+                        d.dist.Position = UDim2.new(0, x + width/2 - 100, 0, y + height + 2)
+                        d.dist.Size = UDim2.new(0, 200, 0, 14)
+                        d.dist.Text = math.floor(dist) .. "m"
+                    else
+                        d.box.Visible = false; d.name.Visible = false; d.hpBG.Visible = false; d.dist.Visible = false
+                    end
                 else
                     d.box.Visible = false; d.name.Visible = false; d.hpBG.Visible = false; d.dist.Visible = false
                 end
-            else
-                d.box.Visible = false; d.name.Visible = false; d.hpBG.Visible = false; d.dist.Visible = false
             end
         end
-    end
-end
-
-local function setLoop(on)
-    if on and not espConn then
-        espConn = FH.RS.RenderStepped:Connect(updateESP)
-    elseif not on and espConn then
-        espConn:Disconnect(); espConn = nil
-        clearESP()
+        task.wait(0.05)
     end
 end
 
 FH.modules["ESP"].panel = function()
-    FH.addToggle("ESP", "enable_esp", function(on) setLoop(on) end)
-    FH.addToggle("ESP", "box_esp", nil, true)
-    FH.addToggle("ESP", "name_esp", nil, true)
-    FH.addToggle("ESP", "health_esp", nil, true)
-    FH.addToggle("ESP", "distance", nil, true)
-    FH.addSlider("ESP", "max_dist", 100, 5000, 1000)
-    FH.addLabel("ESP", "fullbright")
-    FH.addToggle("ESP", "fullbright", function(on)
+    FH.addToggle("ESP", "Enable ESP", function(on)
+        espRunning = on
+        if on then task.spawn(updateESP) else clearESP() end
+    end)
+    FH.addToggle("ESP", "Box ESP", nil, true)
+    FH.addToggle("ESP", "Name ESP", nil, true)
+    FH.addToggle("ESP", "Health ESP", nil, true)
+    FH.addToggle("ESP", "Distance", nil, true)
+    FH.addSlider("ESP", "Max Distance", 100, 5000, 1000)
+    FH.addLabel("ESP", "Environment")
+    FH.addToggle("ESP", "Fullbright", function(on)
         local L = game:GetService("Lighting")
         if on then
             FH._fb = {Brightness=L.Brightness, Ambient=L.Ambient, OutdoorAmbient=L.OutdoorAmbient, FogEnd=L.FogEnd}
