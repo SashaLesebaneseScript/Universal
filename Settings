@@ -1,28 +1,20 @@
 local FH = getgenv().FH
 if not FH or FH.settingsLoaded then return end
 FH.settingsLoaded = true
+FH.modules["Settings"] = {}
 
-local last = FH.val["Accent Color"] or "Pink"
-
-FH.modules["Settings"] = function()
-    FH.crearSeccion("Appearance")
-    FH.crearSelector("Accent Color", FH.presetOrder, "Pink", function(v)
-        if v ~= last then
-            last = v
-            FH.setAccent(v)
-            task.defer(FH.panel)
-        end
+FH.modules["Settings"].panel = function()
+    FH.addLabel("Settings", "language")
+    FH.addButton("Settings", "en", function()
+        FH.lang = "en"
+        FH.panel()
     end)
-    FH.crearSlider("UI Scale", 50, 130, math.floor(FH.us.Scale * 100 + 0.5), function(v)
-        FH.us.Scale = v / 100
+    FH.addButton("Settings", "es", function()
+        FH.lang = "es"
+        FH.panel()
     end)
-
-    FH.crearSeccion("General")
-    FH.crearOpcion("Notifications", function(s) FH.notifs = s end, "Small pop-ups when toggling features", true)
-    FH.crearLabel("PC: press RightShift to show or hide the hub. Drag the F button to move it.")
-
-    FH.crearSeccion("Danger Zone")
-    FH.crearBotonAccion("Unload Hub", function()
-        FH.unload()
+    FH.addButton("Settings", "pt", function()
+        FH.lang = "pt"
+        FH.panel()
     end)
 end
