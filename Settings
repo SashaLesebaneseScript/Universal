@@ -4,17 +4,19 @@ FH.settingsLoaded = true
 FH.modules["Settings"] = {}
 
 FH.modules["Settings"].panel = function()
-    FH.addLabel("Settings", "language")
-    FH.addButton("Settings", "en", function()
-        FH.lang = "en"
-        FH.panel()
+    FH.addLabel("Settings", "GUI Options")
+    
+    FH.addSlider("Settings", "GUI Scale", 0.5, 1.5, 1, function(v)
+        if FH.us then FH.us.Scale = v end
     end)
-    FH.addButton("Settings", "es", function()
-        FH.lang = "es"
-        FH.panel()
+    
+    FH.addSlider("Settings", "Button Size", 30, 100, 60, function(v)
+        if FH.th then
+            FH.th.Size = UDim2.new(0, v, 0, v)
+        end
     end)
-    FH.addButton("Settings", "pt", function()
-        FH.lang = "pt"
-        FH.panel()
+    
+    FH.addButton("Settings", "Unload GUI", function()
+        if FH.unload then FH.unload() end
     end)
 end
