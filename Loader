@@ -2,7 +2,7 @@ if getgenv().FH and getgenv().FH.p1 then return end
 
 local TweenService = game:GetService("TweenService")
 local base = "https://raw.githubusercontent.com/SashaLesebaneseScript/Universal/refs/heads/main/"
-local files = { "MainGUI", "ESP", "Aimbot", "Player", "Extra" }
+local files = { "MainGUI", "ESP", "Aimbot", "Player", "Teleport", "Visual", "Extra", "Settings" }
 
 local total = #files
 local timestamp = tick()
@@ -14,10 +14,7 @@ local function fail(msg)
         FH.lsText.TextColor3 = Color3.fromRGB(255, 50, 50)
     end
     task.wait(3)
-    if FH then
-        if FH.ls then FH.ls:Destroy() end
-        if FH.sg then FH.sg:Destroy() end
-    end
+    if FH and FH.unload then pcall(FH.unload) end
     getgenv().FH = nil
 end
 
