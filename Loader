@@ -1,68 +1,52 @@
-if getgenv().FH and getgenv().FH.p1 then return end
-
 local TweenService = game:GetService("TweenService")
 local base = "https://raw.githubusercontent.com/SashaLesebaneseScript/Universal/refs/heads/main/"
-local files = { "MainGUI", "ESP", "Aimbot", "Player", "Teleport", "Visual", "Extra", "Settings" }
+local files = {
+    "MainGUI",
+    "ESP",
+    "Aimbot",
+    "Player",
+    "Visual",
+    "Teleport",
+    "Settings",
+    "Extra"
+}
 
-local total = #files
+local totalFiles = #files
 local timestamp = tick()
 
-local function fail(msg)
-    local FH = getgenv().FH
-    if FH and FH.lsText then
-        FH.lsText.Text = msg
-        FH.lsText.TextColor3 = Color3.fromRGB(255, 50, 50)
-    end
-    task.wait(3)
-    if FH and FH.unload then pcall(FH.unload) end
-    getgenv().FH = nil
-end
-
-local function download(url)
-    for _ = 1, 3 do
-        local ok, code = pcall(function() return game:HttpGet(url) end)
-        if ok and type(code) == "string" and code ~= "" and not code:find("^404") then
-            return code
-        end
-        task.wait(0.5)
-    end
-    return nil
-end
-
 for i, file in ipairs(files) do
-    local FH = getgenv().FH
-    if FH and FH.lsText then
-        FH.lsText.Text = "Loading " .. file .. " page..."
+    if getgenv().FH and getgenv().FH.lsText then
+        getgenv().FH.lsText.Text = "Loading " .. file .. "..."
     end
-
-    local code = download(base .. file .. "?t=" .. tostring(math.floor(timestamp)))
-    if not code then
-        return fail("Failed to download " .. file)
+    local endProgress = i / totalFiles
+    local url = base .. file .. "?t=" .. tostring(math.floor(timestamp))
+    local ok, code = pcall(function() return game:HttpGet(url, true) end)
+    local waitTime = math.random(15, 25) / 10
+    if getgenv().FH and getgenv().FH.lsFill then
+        local tween = TweenService:Create(getgenv().FH.lsFill, TweenInfo.new(waitTime, Enum.EasingStyle.Linear), {Size = UDim2.new(endProgress, 0, 1, 0)})
+        tween:Play()
+        tween.Completed:Wait()
+    else
+        task.wait(waitTime)
     end
-
-    local fn = loadstring(code)
-    if not fn then
-        return fail("Syntax error in " .. file)
+    if ok and code and code ~= "" and not code:find("404: Not Found") then
+        local fn = loadstring(code)
+        if fn then pcall(fn) end
     end
-
-    local ok = pcall(fn)
-    if not ok then
-        return fail("Failed to run " .. file)
-    end
-
-    FH = getgenv().FH
-    if FH and FH.lsFill then
-        TweenService:Create(FH.lsFill, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(i / total, 0, 1, 0)
-        }):Play()
-    end
+    task.wait(0.1)
 end
 
-local FH = getgenv().FH
-if FH then
-    FH.lsText.Text = "Done!"
-    task.wait(0.4)
-    pcall(FH.panel)
-    if FH.ls then FH.ls:Destroy() end
-    FH.sg.Enabled = true
+if getgenv().FH then
+    if getgenv().FH.lsFrame then
+        TweenService:Create(getgenv().FH.lsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        task.wait(0.3)
+    end
+    if getgenv().FH.ls then getgenv().FH.ls:Destroy() end
+    if getgenv().FH.sg then getgenv().FH.sg.Enabled = true end
+    if getgenv().FH.fr then
+        getgenv().FH.fr.Size = UDim2.new(0, 0, 0, 0)
+        getgenv().FH.fr.Visible = true
+        TweenService:Create(getgenv().FH.fr, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, getgenv().FH.BW, 0, getgenv().FH.BH)}):Play()
+    end
+    if getgenv().FH.panel then pcall(getgenv().FH.panel) end
 end
