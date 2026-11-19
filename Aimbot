@@ -4,8 +4,8 @@ FH.aimLoaded = true
 FH.modules["Aimbot"] = {}
 
 local cfg = {
-    on = false, team = false, wall = false, friends = false,
-    showFov = false, fov = 150, smooth = 40, part = "Head", mode = "Hold RMB"
+    on = false, team = false, wall = false, ignoreFriends = false,
+    showFov = false, fov = 150, smooth = 40, part = "Head"
 }
 
 local circle = Instance.new("Frame")
@@ -54,7 +54,7 @@ local function getTarget(cam)
     for _, p in ipairs(FH.PL:GetPlayers()) do
         local skip = p == FH.LP or not p.Character
         if not skip and cfg.team and FH.LP.Team ~= nil and p.Team == FH.LP.Team then skip = true end
-        if not skip and cfg.friends and isFriend(p) then skip = true end
+        if not skip and cfg.ignoreFriends and isFriend(p) then skip = true end
         if not skip then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
             local part = aimPart(p.Character)
@@ -83,7 +83,7 @@ FH.bind(FH.RS.RenderStepped, function()
     updCircle()
     if not cfg.on then return end
     local touchOnly = FH.UI.TouchEnabled and not FH.UI.MouseEnabled
-    if not touchOnly and cfg.mode == "Hold RMB" and not FH.UI:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
+    if not touchOnly and not FH.UI:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
     local cam = FH.WS.CurrentCamera; if not cam then return end
     local t = getTarget(cam)
     if t then
@@ -93,11 +93,11 @@ FH.bind(FH.RS.RenderStepped, function()
 end)
 
 FH.modules["Aimbot"].panel = function()
-    FH.addToggle("Aimbot", "enable_aimbot", function(on) cfg.on = on end)
-    FH.addToggle("Aimbot", "team_check", function(on) cfg.team = on end)
-    FH.addToggle("Aimbot", "wall_check", function(on) cfg.wall = on end)
-    FH.addToggle("Aimbot", "friends", function(on) cfg.friends = on end)
-    FH.addToggle("Aimbot", "show_fov", function(on) cfg.showFov = on end)
-    FH.addSlider("Aimbot", "fov", 10, 500, 150, function(v) cfg.fov = v end)
-    FH.addSlider("Aimbot", "smooth", 1, 100, 40, function(v) cfg.smooth = v end)
+    FH.addToggle("Aimbot", "Enable Aimbot", function(on) cfg.on = on end)
+    FH.addToggle("Aimbot", "Team Check", function(on) cfg.team = on end)
+    FH.addToggle("Aimbot", "Wall Check", function(on) cfg.wall = on end)
+    FH.addToggle("Aimbot", "Ignore Friends", function(on) cfg.ignoreFriends = on end)
+    FH.addToggle("Aimbot", "Show FOV Circle", function(on) cfg.showFov = on end)
+    FH.addSlider("Aimbot", "FOV", 10, 500, 150, function(v) cfg.fov = v end)
+    FH.addSlider("Aimbot", "Smoothness", 1, 100, 40, function(v) cfg.smooth = v end)
 end
