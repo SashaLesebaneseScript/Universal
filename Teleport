@@ -12,34 +12,42 @@ local function tweenTo(pos)
     if dist > 2000 then
         hrp.CFrame = CFrame.new(pos)
     else
-        local tween = FH.TW:Create(hrp, TweenInfo.new(dist / 100, Enum.EasingStyle.Linear), {CFrame = CFrame.new(pos)})
-        tween:Play()
+        FH.TW:Create(hrp, TweenInfo.new(dist / 100, Enum.EasingStyle.Linear), {CFrame = CFrame.new(pos)}):Play()
     end
 end
 
 FH.modules["Teleport"].panel = function()
-    FH.addLabel("Teleport", "teleport")
-    FH.addButton("Teleport", "go_spawn", function()
+    FH.addLabel("Teleport", "Locations")
+    FH.addButton("Teleport", "Go to Spawn", function()
         local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
-        if spawn then
-            tweenTo(spawn.Position + Vector3.new(0, 3, 0))
-        end
+        if spawn then tweenTo(spawn.Position + Vector3.new(0, 3, 0)) end
     end)
-    FH.addButton("Teleport", "go_player", function()
-        local nearest = FH.nearest()
-        if nearest and nearest.HRP then
-            tweenTo(nearest.HRP.Position + Vector3.new(0, 3, 0))
+    FH.addButton("Teleport", "Teleport to Nearest Player", function()
+        local mc = FH.LP.Character
+        if not mc then return end
+        local mh = mc:FindFirstChild("HumanoidRootPart")
+        if not mh then return end
+        local b, bd = nil, 9999
+        for _, p in ipairs(FH.PL:GetPlayers()) do
+            if p ~= FH.LP and p.Character then
+                local hr = p.Character:FindFirstChild("HumanoidRootPart")
+                if hr then
+                    local d = (mh.Position - hr.Position).Magnitude
+                    if d < bd then bd = d; b = hr end
+                end
+            end
         end
+        if b then tweenTo(b.Position + Vector3.new(0, 3, 0)) end
     end)
-    FH.addButton("Teleport", "save_pos", function()
+    
+    FH.addLabel("Teleport", "Saved Location")
+    FH.addButton("Teleport", "Save Position", function()
         local char = FH.LP.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
             FH.savedPos = char.HumanoidRootPart.CFrame
         end
     end)
-    FH.addButton("Teleport", "load_pos", function()
-        if FH.savedPos then
-            tweenTo(FH.savedPos.Position)
-        end
+    FH.addButton("Teleport", "Load Position", function()
+        if FH.savedPos then tweenTo(FH.savedPos.Position) end
     end)
 end
