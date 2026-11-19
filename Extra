@@ -2,65 +2,45 @@ local FH = getgenv().FH
 if not FH or FH.extraLoaded then return end
 FH.extraLoaded = true
 
-local L = game:GetService("Lighting")
-local cfg = { full = false, soft = false, nofog = false, afk = false }
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local cfg = { overlay = false }
 
-local orig = {
-    Brightness = L.Brightness,
-    ClockTime = L.ClockTime,
-    Ambient = L.Ambient,
-    OutdoorAmbient = L.OutdoorAmbient,
-    FogStart = L.FogStart,
-    FogEnd = L.FogEnd,
-}
-local atm = L:FindFirstChildOfClass("Atmosphere")
-local atmOrig = atm and { Density = atm.Density, Haze = atm.Haze }
+local ov = Instance.new("TextLabel")
+ov.Size = UDim2.new(0, 150, 0, 24)
+ov.Position = UDim2.new(0, 84, 0, 118)
+ov.BackgroundColor3 = FH.C.bg_dark
+ov.BackgroundTransparency = .35
+ov.BorderSizePixel = 0
+ov.Text = "-- FPS | -- ms"
+ov.TextColor3 = FH.C.text
+ov.TextSize = 13
+ov.Font = Enum.Font.GothamBold
+ov.Visible = false
+ov.ZIndex = 0
+ov.Parent = FH.sg
+Instance.new("UICorner", ov).CornerRadius = UDim.new(0, 8)
 
-local function apply(d)
-    for k, v in pairs(d) do
-        if L[k] ~= v then L[k] = v end
-    end
-end
-
-local applied = false
-FH.RS.Heartbeat:Connect(function()
-    local any = cfg.full or cfg.soft or cfg.nofog
-    if any then
-        applied = true
-        local d = table.clone(orig)
-        if cfg.full then
-            d.Brightness = 2
-            d.ClockTime = 14
-            d.Ambient = Color3.new(1, 1, 1)
-            d.OutdoorAmbient = Color3.new(1, 1, 1)
-        elseif cfg.soft then
-            d.Brightness = 1.5
-            d.ClockTime = 14
-            d.Ambient = Color3.fromRGB(150, 150, 150)
-            d.OutdoorAmbient = Color3.fromRGB(150, 150, 150)
-        end
-        if cfg.nofog then
-            d.FogStart = 1e8
-            d.FogEnd = 1e9
-        end
-        apply(d)
-        if atm and atm.Parent then
-            if cfg.nofog then
-                atm.Density, atm.Haze = 0, 0
-            else
-                atm.Density, atm.Haze = atmOrig.Density, atmOrig.Haze
-            end
-        end
-    elseif applied then
-        applied = false
-        apply(orig)
-        if atm and atm.Parent then
-            atm.Density, atm.Haze = atmOrig.Density, atmOrig.Haze
-        end
+local acc, frames = 0, 0
+FH.bind(FH.RS.RenderStepped, function(dt)
+    if not cfg.overlay then return end
+    acc = acc + dt
+    frames = frames + 1
+    if acc >= 0.5 then
+        local ping = 0
+        pcall(function()
+            ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+        end)
+        ov.Text = math.floor(frames / acc) .. " FPS | " .. ping .. " ms"
+        acc, frames = 0, 0
     end
 end)
 
 local afkConn
+FH.onUnload(function()
+    if afkConn then afkConn:Disconnect() end
+end)
+
 local function setAfk(s)
     if afkConn then afkConn:Disconnect() afkConn = nil end
     if s then
@@ -72,11 +52,55 @@ local function setAfk(s)
     end
 end
 
+local function hop()
+    FH.notify("Searching servers...")
+    local ok, res = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    end)
+    if ok and res and res.data then
+        for _, s in ipairs(res.data) do
+            if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, FH.LP)
+                return
+            end
+        end
+    end
+    FH.notify("No servers found", false)
+end
+
+local function copy(text, label)
+    local cp = setclipboard or toclipboard
+    if cp then
+        cp(text)
+        FH.notify(label .. " copied")
+    else
+        FH.notify("Clipboard not supported", false)
+    end
+end
+
 FH.modules["Extra"] = function()
-    FH.crearOpcion("FullBright", function(s) cfg.full = s end)
-    FH.crearOpcion("FullBright Suave", function(s) cfg.soft = s end)
-    FH.crearOpcion("No Fog", function(s) cfg.nofog = s end)
-    FH.crearOpcion("Anti AFK", setAfk)
+    FH.crearSeccion("Utility")
+    FH.crearOpcion("Anti AFK", setAfk, "Prevents getting kicked for idling")
+    FH.crearOpcion("FPS and Ping", function(s)
+        cfg.overlay = s
+        ov.Visible = s
+    end, "Small counter on screen")
+
+    FH.crearSeccion("Server")
+    FH.crearBotonAccion("Rejoin Server", function()
+        TeleportService:Teleport(game.PlaceId, FH.LP)
+    end)
+    FH.crearBotonAccion("Server Hop", function()
+        task.spawn(hop)
+    end)
+    FH.crearBotonAccion("Copy Place ID", function()
+        copy(tostring(game.PlaceId), "Place ID")
+    end)
+    FH.crearBotonAccion("Copy Job ID", function()
+        copy(game.JobId, "Job ID")
+    end)
+
+    FH.crearSeccion("Character")
     FH.crearBotonAccion("Reset Character", function()
         local c = FH.LP.Character
         local h = c and c:FindFirstChildOfClass("Humanoid")
