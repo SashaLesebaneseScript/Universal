@@ -13,7 +13,6 @@ local function fail(msg)
         FH.lsText.Text = msg
         FH.lsText.TextColor3 = Color3.fromRGB(255, 50, 50)
     end
-    warn("[FH] " .. msg)
     task.wait(3)
     if FH then
         if FH.ls then FH.ls:Destroy() end
@@ -22,27 +21,36 @@ local function fail(msg)
     getgenv().FH = nil
 end
 
+local function download(url)
+    for _ = 1, 3 do
+        local ok, code = pcall(function() return game:HttpGet(url) end)
+        if ok and type(code) == "string" and code ~= "" and not code:find("^404") then
+            return code
+        end
+        task.wait(0.5)
+    end
+    return nil
+end
+
 for i, file in ipairs(files) do
     local FH = getgenv().FH
     if FH and FH.lsText then
         FH.lsText.Text = "Loading " .. file .. " page..."
     end
 
-    local url = base .. file .. "?t=" .. tostring(math.floor(timestamp))
-    local ok, code = pcall(function() return game:HttpGet(url) end)
-    if not ok or type(code) ~= "string" or code == "" then
-        return fail("Error descargando " .. file)
+    local code = download(base .. file .. "?t=" .. tostring(math.floor(timestamp)))
+    if not code then
+        return fail("Failed to download " .. file)
     end
 
-    local fn, err = loadstring(code)
+    local fn = loadstring(code)
     if not fn then
-        return fail("Error de sintaxis en " .. file)
+        return fail("Syntax error in " .. file)
     end
 
-    local ok2, err2 = pcall(fn)
-    if not ok2 then
-        warn("[FH] " .. file .. ": " .. tostring(err2))
-        return fail("Error ejecutando " .. file)
+    local ok = pcall(fn)
+    if not ok then
+        return fail("Failed to run " .. file)
     end
 
     FH = getgenv().FH
