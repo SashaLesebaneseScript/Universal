@@ -1,6 +1,7 @@
 if getgenv().FH and getgenv().FH.p1 then return end
 local FH = {}
 getgenv().FH = FH
+FH.ver = 2
 FH.RS = game:GetService("RunService")
 FH.PL = game:GetService("Players")
 FH.WS = game:GetService("Workspace")
@@ -614,6 +615,326 @@ FH.crearOpcion = function(nombre, callback, desc, default)
     end)
     FH.animar(tb2)
 end
-
 FH.crearSlider = function(nombre, mn, mx, def, callback)
-    
+    local v = FH.val[nombre] or def
+    local o = card(56)
+
+    local l = Instance.new("TextLabel", o)
+    l.Size = UDim2.new(1, -90, 0, 20)
+    l.Position = UDim2.new(0, 14, 0, 6)
+    l.BackgroundTransparency = 1
+    l.Text = nombre
+    l.TextColor3 = C.text
+    l.TextSize = 14
+    l.Font = Enum.Font.GothamBold
+    l.TextXAlignment = Enum.TextXAlignment.Left
+
+    local vl = Instance.new("TextLabel", o)
+    vl.Size = UDim2.new(0, 60, 0, 20)
+    vl.Position = UDim2.new(1, -74, 0, 6)
+    vl.BackgroundTransparency = 1
+    vl.Text = tostring(v)
+    vl.TextSize = 14
+    vl.Font = Enum.Font.GothamBlack
+    vl.TextXAlignment = Enum.TextXAlignment.Right
+    FH.theme(vl, "TextColor3", "accent")
+
+    local bar = Instance.new("Frame", o)
+    bar.Size = UDim2.new(1, -28, 0, 8)
+    bar.Position = UDim2.new(0, 14, 0, 38)
+    bar.BackgroundColor3 = C.bg_dark
+    bar.BorderSizePixel = 0
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+
+    local r0 = (v - mn) / (mx - mn)
+    local fill = Instance.new("Frame", bar)
+    fill.Size = UDim2.new(r0, 0, 1, 0)
+    fill.BorderSizePixel = 0
+    FH.theme(fill, "BackgroundColor3", "accent")
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
+    local knob = Instance.new("Frame", bar)
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.AnchorPoint = Vector2.new(.5, .5)
+    knob.Position = UDim2.new(r0, 0, .5, 0)
+    knob.BackgroundColor3 = Color3.new(1, 1, 1)
+    knob.BorderSizePixel = 0
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+    local hit = Instance.new("TextButton", o)
+    hit.Size = UDim2.new(1, -28, 0, 26)
+    hit.Position = UDim2.new(0, 14, 0, 29)
+    hit.BackgroundTransparency = 1
+    hit.Text = ""
+
+    local dragging = false
+    local function upd(x)
+        local r = math.clamp((x - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
+        v = math.floor(mn + (mx - mn) * r + 0.5)
+        FH.val[nombre] = v
+        fill.Size = UDim2.new(r, 0, 1, 0)
+        knob.Position = UDim2.new(r, 0, .5, 0)
+        vl.Text = tostring(v)
+        if callback then pcall(callback, v) end
+    end
+
+    hit.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            upd(i.Position.X)
+        end
+    end)
+    table.insert(FH.panelConns, FH.UI.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseMovement) then
+            upd(i.Position.X)
+        end
+    end))
+    table.insert(FH.panelConns, FH.UI.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end))
+
+    FH.val[nombre] = v
+    if callback then pcall(callback, v) end
+end
+
+FH.crearSelector = function(nombre, opciones, def, callback)
+    local cur = FH.val[nombre] or def or opciones[1]
+    local idx = 1
+    for i, v in ipairs(opciones) do
+        if v == cur then idx = i end
+    end
+    local o = card(44)
+
+    local l = Instance.new("TextLabel", o)
+    l.Size = UDim2.new(1, -150, 1, 0)
+    l.Position = UDim2.new(0, 14, 0, 0)
+    l.BackgroundTransparency = 1
+    l.Text = nombre
+    l.TextColor3 = C.text
+    l.TextSize = 15
+    l.Font = Enum.Font.GothamBold
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    l.TextTruncate = Enum.TextTruncate.AtEnd
+
+    local b = Instance.new("TextButton", o)
+    b.Size = UDim2.new(0, 122, 0, 28)
+    b.Position = UDim2.new(1, -134, .5, -14)
+    b.Text = cur
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.TextSize = 13
+    b.Font = Enum.Font.GothamBold
+    b.BorderSizePixel = 0
+    b.AutoButtonColor = false
+    FH.theme(b, "BackgroundColor3", "accent2")
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+
+    b.MouseButton1Click:Connect(function()
+        idx = idx % #opciones + 1
+        cur = opciones[idx]
+        FH.val[nombre] = cur
+        b.Text = cur
+        FH.sfx("button", 1, 1.3)
+        if callback then pcall(callback, cur) end
+    end)
+
+    FH.val[nombre] = cur
+    if callback then pcall(callback, cur) end
+end
+
+FH.crearBotonAccion = function(nombre, onFire)
+    local b = Instance.new("TextButton")
+    b.LayoutOrder = nextOrder()
+    b.Size = UDim2.new(1, 0, 0, 38)
+    b.BackgroundColor3 = C.bg_card
+    b.BackgroundTransparency = .15
+    b.Text = nombre
+    b.TextColor3 = C.text
+    b.TextSize = 15
+    b.Font = Enum.Font.GothamBold
+    b.BorderSizePixel = 0
+    b.AutoButtonColor = false
+    b.Parent = oc
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
+    local s = Instance.new("UIStroke", b)
+    s.Thickness = 1
+    s.Transparency = .3
+    FH.theme(s, "Color", "border")
+    b.MouseButton1Click:Connect(function()
+        FH.sfx("button", 2, 1.3)
+        b.BackgroundColor3 = C.accent
+        b.BackgroundTransparency = 0
+        FH.TW:Create(b, TweenInfo.new(.35), { BackgroundColor3 = C.bg_card, BackgroundTransparency = .15 }):Play()
+        pcall(onFire)
+    end)
+end
+
+FH.panel = function()
+    for _, c in ipairs(FH.panelConns) do pcall(function() c:Disconnect() end) end
+    table.clear(FH.panelConns)
+    for _, h in ipairs(FH.oc:GetChildren()) do
+        if not h:IsA("UIListLayout") and not h:IsA("UIPadding") then h:Destroy() end
+    end
+    FH.order = 0
+    local m = FH.modules[FH.pestana]
+    if not m then
+        FH.crearLabel("Module not loaded: " .. FH.pestana, C.danger)
+        return
+    end
+    local ok, err = pcall(m)
+    if not ok then
+        FH.crearLabel("Error: " .. tostring(err), C.danger)
+    end
+end
+
+local TABS = {
+    { "ESP", "👁" },
+    { "Aimbot", "🎯" },
+    { "Player", "🏃" },
+    { "Teleport", "📍" },
+    { "Visual", "✨" },
+    { "Extra", "🧰" },
+    { "Settings", "⚙" }
+}
+local tabs = {}
+FH.tabs = tabs
+
+local function mkTab(n, icon)
+    local t = Instance.new("TextButton", FH.sb)
+    t.Size = UDim2.new(1, -12, 0, 34)
+    t.BackgroundColor3 = C.bg_card
+    t.BackgroundTransparency = .25
+    t.Text = ""
+    t.BorderSizePixel = 0
+    t.AutoButtonColor = false
+    Instance.new("UICorner", t).CornerRadius = UDim.new(0, 10)
+
+    local ic = Instance.new("TextLabel", t)
+    ic.Size = UDim2.new(0, 30, 1, 0)
+    ic.Position = UDim2.new(0, 6, 0, 0)
+    ic.BackgroundTransparency = 1
+    ic.Text = icon
+    ic.TextSize = 16
+    ic.Font = Enum.Font.GothamBold
+
+    local l = Instance.new("TextLabel", t)
+    l.Size = UDim2.new(1, -42, 1, 0)
+    l.Position = UDim2.new(0, 38, 0, 0)
+    l.BackgroundTransparency = 1
+    l.Text = n
+    l.TextSize = 14
+    l.Font = Enum.Font.GothamBold
+    l.TextXAlignment = Enum.TextXAlignment.Left
+
+    local ck = false
+    local function setSt(s)
+        if s == "sel" then
+            t.BackgroundColor3 = C.accent
+            t.BackgroundTransparency = .05
+            l.TextColor3 = Color3.new(1, 1, 1)
+        else
+            t.BackgroundColor3 = C.bg_card
+            t.BackgroundTransparency = .25
+            l.TextColor3 = C.text
+        end
+    end
+
+    t.MouseButton1Click:Connect(function()
+        if ck then return end
+        ck = true
+        FH.sfx("tab_switch", 2, 1)
+        if FH.pestana ~= n then
+            if tabs[FH.pestana] then tabs[FH.pestana].S("dese") end
+            FH.pestana = n
+            setSt("sel")
+        end
+        task.spawn(function() pcall(FH.panel) end)
+        task.delay(.25, function() ck = false end)
+    end)
+
+    FH.animar(t)
+    tabs[n] = { S = setSt }
+end
+
+for _, d in ipairs(TABS) do mkTab(d[1], d[2]) end
+FH.themeFn(function()
+    for n, t in pairs(tabs) do
+        t.S(n == FH.pestana and "sel" or "dese")
+    end
+end)
+
+local th = Instance.new("Frame")
+th.Size = UDim2.new(0, 56, 0, 56)
+th.Position = UDim2.new(0, 16, 0, 100)
+th.BackgroundTransparency = 1
+th.Parent = sg
+
+local tbtn = Instance.new("TextButton", th)
+tbtn.Size = UDim2.new(1, 0, 1, 0)
+tbtn.BackgroundColor3 = Color3.new(1, 1, 1)
+tbtn.Text = "F"
+tbtn.TextColor3 = Color3.new(1, 1, 1)
+tbtn.TextSize = 30
+tbtn.Font = Enum.Font.GothamBlack
+tbtn.BorderSizePixel = 0
+tbtn.AutoButtonColor = false
+Instance.new("UICorner", tbtn).CornerRadius = UDim.new(1, 0)
+local tg2 = Instance.new("UIGradient", tbtn)
+tg2.Rotation = 90
+FH.themeFn(function()
+    tg2.Color = ColorSequence.new(C.accent, C.accent2)
+end)
+local stBtn = Instance.new("UIStroke", tbtn)
+stBtn.Color = Color3.new(1, 1, 1)
+stBtn.Thickness = 2
+stBtn.Transparency = .55
+local ps = Instance.new("UIScale", tbtn)
+
+task.spawn(function()
+    while th.Parent do
+        FH.TW:Create(ps, TweenInfo.new(0.9, Enum.EasingStyle.Sine), { Scale = 1.08 }):Play()
+        task.wait(0.9)
+        FH.TW:Create(ps, TweenInfo.new(0.9, Enum.EasingStyle.Sine), { Scale = 1 }):Play()
+        task.wait(0.9)
+    end
+end)
+
+local tDrag, tMoved, tStart, tPos = false, false, nil, nil
+tbtn.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+        tDrag = true
+        tMoved = false
+        tStart = i.Position
+        tPos = th.Position
+    end
+end)
+FH.bind(FH.UI.InputChanged, function(i)
+    if tDrag and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseMovement) then
+        local d = i.Position - tStart
+        if d.Magnitude > 6 then tMoved = true end
+        if tMoved then
+            local s = us.Scale
+            if s <= 0 then s = 1 end
+            local vp = workspace.CurrentCamera.ViewportSize
+            th.Position = UDim2.new(0, math.clamp(tPos.X.Offset + d.X / s, 0, vp.X / s - 56), 0, math.clamp(tPos.Y.Offset + d.Y / s, 0, vp.Y / s - 56))
+        end
+    end
+end)
+FH.bind(FH.UI.InputEnded, function(i)
+    if tDrag and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1) then
+        tDrag = false
+        if not tMoved then
+            FH.sfx("button", 1, 1.2)
+            FH.toggleUI()
+        end
+    end
+end)
+
+FH.bind(FH.UI.InputBegan, function(i, gp)
+    if not gp and i.KeyCode == Enum.KeyCode.RightShift then
+        FH.toggleUI()
+    end
+end)
+
+FH.p1 = true
