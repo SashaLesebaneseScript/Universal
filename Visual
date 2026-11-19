@@ -1,172 +1,31 @@
 local FH = getgenv().FH
 if not FH or FH.visualLoaded then return end
 FH.visualLoaded = true
+FH.modules["Visual"] = {}
 
-local L = game:GetService("Lighting")
-local cfg = {
-    full = false, soft = false, nofog = false, time = false, timeVal = 14,
-    shadows = false, fov = false, fovVal = 70, zoom = false, cross = false
-}
-
-local orig = {
-    Brightness = L.Brightness,
-    ClockTime = L.ClockTime,
-    Ambient = L.Ambient,
-    OutdoorAmbient = L.OutdoorAmbient,
-    FogStart = L.FogStart,
-    FogEnd = L.FogEnd,
-    GlobalShadows = L.GlobalShadows,
-}
-local atm = L:FindFirstChildOfClass("Atmosphere")
-local atmOrig = atm and { Density = atm.Density, Haze = atm.Haze }
-local camOrig = FH.WS.CurrentCamera and FH.WS.CurrentCamera.FieldOfView or 70
-local zoomOrig
-
-local function apply(d)
-    for k, v in pairs(d) do
-        if L[k] ~= v then L[k] = v end
-    end
-end
-
-local applied = false
-FH.bind(FH.RS.Heartbeat, function()
-    local any = cfg.full or cfg.soft or cfg.nofog or cfg.time or cfg.shadows
-    if any then
-        applied = true
-        local d = table.clone(orig)
-        if cfg.full then
-            d.Brightness = 2
-            d.ClockTime = 14
-            d.Ambient = Color3.new(1, 1, 1)
-            d.OutdoorAmbient = Color3.new(1, 1, 1)
-        elseif cfg.soft then
-            d.Brightness = 1.5
-            d.ClockTime = 14
-            d.Ambient = Color3.fromRGB(150, 150, 150)
-            d.OutdoorAmbient = Color3.fromRGB(150, 150, 150)
+FH.modules["Visual"].panel = function()
+    FH.addLabel("Visual", "visual")
+    FH.addToggle("Visual", "Remove Fog", function(on)
+        local L = game:GetService("Lighting")
+        if on then
+            FH._fog = {FogEnd = L.FogEnd, FogStart = L.FogStart}
+            L.FogEnd = 100000
+            L.FogStart = 0
+        elseif FH._fog then
+            L.FogEnd = FH._fog.FogEnd
+            L.FogStart = FH._fog.FogStart
+            FH._fog = nil
         end
-        if cfg.time then d.ClockTime = cfg.timeVal end
-        if cfg.shadows then d.GlobalShadows = false end
-        if cfg.nofog then
-            d.FogStart = 1e8
-            d.FogEnd = 1e9
-        end
-        apply(d)
-        if atm and atm.Parent then
-            if cfg.nofog then
-                atm.Density, atm.Haze = 0, 0
-            else
-                atm.Density, atm.Haze = atmOrig.Density, atmOrig.Haze
+    end)
+    FH.addToggle("Visual", "Remove Shadows", function(on)
+        local L = game:GetService("Lighting")
+        if on then
+            FH._shadow = L.GlobalShadows
+            L.GlobalShadows = false
+        else
+            if FH._shadow ~= nil then
+                L.GlobalShadows = FH._shadow
             end
         end
-    elseif applied then
-        applied = false
-        apply(orig)
-        if atm and atm.Parent then
-            atm.Density, atm.Haze = atmOrig.Density, atmOrig.Haze
-        end
-    end
-end)
-
-FH.bind(FH.RS.RenderStepped, function()
-    local cam = FH.WS.CurrentCamera
-    if cfg.fov and cam then cam.FieldOfView = cfg.fovVal end
-end)
-
-local ch = Instance.new("Frame")
-ch.AnchorPoint = Vector2.new(.5, .5)
-ch.Position = UDim2.new(.5, 0, .5, 0)
-ch.Size = UDim2.new(0, 16, 0, 16)
-ch.BackgroundTransparency = 1
-ch.Visible = false
-ch.ZIndex = 0
-ch.Parent = FH.sg
-local chH = Instance.new("Frame", ch)
-chH.AnchorPoint = Vector2.new(.5, .5)
-chH.Position = UDim2.new(.5, 0, .5, 0)
-chH.Size = UDim2.new(1, 0, 0, 2)
-chH.BorderSizePixel = 0
-FH.theme(chH, "BackgroundColor3", "accent")
-local chV = Instance.new("Frame", ch)
-chV.AnchorPoint = Vector2.new(.5, .5)
-chV.Position = UDim2.new(.5, 0, .5, 0)
-chV.Size = UDim2.new(0, 2, 1, 0)
-chV.BorderSizePixel = 0
-FH.theme(chV, "BackgroundColor3", "accent")
-
-local boost = {}
-local boostQ
-local function boostOn()
-    pcall(function()
-        boostQ = settings().Rendering.QualityLevel
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     end)
-    for _, v in ipairs(L:GetChildren()) do
-        if v:IsA("PostEffect") then
-            table.insert(boost, { v, v.Enabled })
-            v.Enabled = false
-        end
-    end
-    for _, v in ipairs(FH.WS:GetDescendants()) do
-        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
-            table.insert(boost, { v, v.Enabled })
-            v.Enabled = false
-        end
-    end
-end
-local function boostOff()
-    for _, t in ipairs(boost) do
-        if t[1].Parent then t[1].Enabled = t[2] end
-    end
-    table.clear(boost)
-    pcall(function()
-        if boostQ then settings().Rendering.QualityLevel = boostQ end
-    end)
-end
-
-FH.onUnload(function()
-    apply(orig)
-    if atm and atm.Parent then atm.Density, atm.Haze = atmOrig.Density, atmOrig.Haze end
-    local cam = FH.WS.CurrentCamera
-    if cam then cam.FieldOfView = camOrig end
-    if zoomOrig then
-        FH.LP.CameraMaxZoomDistance = zoomOrig[1]
-        FH.LP.CameraMinZoomDistance = zoomOrig[2]
-    end
-    boostOff()
-end)
-
-FH.modules["Visual"] = function()
-    FH.crearSeccion("Lighting")
-    FH.crearOpcion("FullBright", function(s) cfg.full = s end, "Maximum brightness everywhere")
-    FH.crearOpcion("FullBright Soft", function(s) cfg.soft = s end, "Softer version, keeps some contrast")
-    FH.crearOpcion("No Fog", function(s) cfg.nofog = s end)
-    FH.crearOpcion("No Shadows", function(s) cfg.shadows = s end)
-    FH.crearOpcion("Custom Time", function(s) cfg.time = s end)
-    FH.crearSlider("Time of Day", 0, 24, 14, function(v) cfg.timeVal = v end)
-
-    FH.crearSeccion("Camera")
-    FH.crearOpcion("Custom FOV", function(s)
-        cfg.fov = s
-        local cam = FH.WS.CurrentCamera
-        if not s and cam then cam.FieldOfView = camOrig end
-    end)
-    FH.crearSlider("FOV Value", 30, 120, 70, function(v) cfg.fovVal = v end)
-    FH.crearOpcion("Max Zoom", function(s)
-        cfg.zoom = s
-        if s then
-            zoomOrig = { FH.LP.CameraMaxZoomDistance, FH.LP.CameraMinZoomDistance }
-            FH.LP.CameraMaxZoomDistance = 2000
-            FH.LP.CameraMinZoomDistance = 0
-        elseif zoomOrig then
-            FH.LP.CameraMaxZoomDistance = zoomOrig[1]
-            FH.LP.CameraMinZoomDistance = zoomOrig[2]
-        end
-    end, "Unlock the zoom limits")
-
-    FH.crearSeccion("Screen")
-    FH.crearOpcion("Crosshair", function(s) ch.Visible = s end)
-    FH.crearOpcion("FPS Boost", function(s)
-        if s then boostOn() else boostOff() end
-    end, "Lower quality, effects and particles")
 end
